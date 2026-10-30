@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Database\QueryException;
 
 class UserController extends Controller
 {
@@ -74,13 +75,17 @@ class UserController extends Controller
     }
 
     public function destroy(Request $request, User $user)
-    {
-        if ($user->is($request->user())) {
-            return back()->with('error', 'Anda tidak dapat menghapus akun yang sedang dipakai.');
-        }
-
-        $user->delete();
-
-        return redirect()->route('admin.users.index')->with('success', 'User berhasil dihapus.');
+{
+    if ($user->is($request->user())) {
+        return back()->with('error', 'Anda tidak dapat menghapus akun yang sedang dipakai.');
     }
+
+    try {
+        $user->delete();
+    } catch (QueryException $e) {
+        return back()->with('error', 'User ini sudah memiliki riwayat transaksi dan tidak bisa dihapus.');
+    }
+
+    return redirect()->route('admin.users.index')->with('success', 'User berhasil dihapus.');
+}
 }

@@ -19,4 +19,9 @@ class Menu extends Model
     {
         return $this->image ? asset('storage/' . $this->image) : null;
     }
+
+    public function items()
+{
+    return $this->hasMany(TransactionItem::class);
+}
 }

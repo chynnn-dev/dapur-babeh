@@ -8,6 +8,9 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\TableController;
+use App\Http\Controllers\Cashier\CashierController;
+use App\Http\Controllers\Kitchen\KitchenController;
+use App\Http\Controllers\Kitchen\StockController;
 
 Route::get('/', fn () => redirect()->route('login'));
 
@@ -39,12 +42,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::patch('settings/table-management', [SettingController::class, 'toggleTableManagement'])->name('settings.table-management');
 });
 
-Route::middleware(['auth', 'role:cashier'])->prefix('cashier')->group(function () {
-    Route::view('/pos', 'placeholder', ['title' => 'POS Kasir'])->name('cashier.pos');
+Route::middleware(['auth', 'role:cashier'])->prefix('cashier')->name('cashier.')->group(function () {
+    Route::get('/pos', [CashierController::class, 'index'])->name('pos');
+    Route::post('/transactions', [CashierController::class, 'store'])->name('store');
+    Route::get('/transactions/{transaction}/receipt', [CashierController::class, 'receipt'])->name('receipt');
 });
 
-Route::middleware(['auth', 'role:kitchen'])->prefix('kitchen')->group(function () {
-    Route::view('/', 'placeholder', ['title' => 'Layar Dapur'])->name('kitchen.index');
+//role kitchen
+Route::middleware(['auth', 'role:kitchen'])->prefix('kitchen')->name('kitchen.')->group(function () {
+    Route::get('/', [KitchenController::class, 'index'])->name('index');
+    Route::get('/orders', [KitchenController::class, 'orders'])->name('orders');
+    Route::patch('/orders/{transaction}', [KitchenController::class, 'updateStatus'])->name('update');
+
+    Route::get('/stock', [StockController::class, 'index'])->name('stock');
+    Route::patch('/stock/{menu}', [StockController::class, 'toggle'])->name('stock.toggle');
 });
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {

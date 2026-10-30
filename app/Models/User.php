@@ -33,4 +33,9 @@ class User extends Authenticatable
             'kitchen' => route('kitchen.index'),
         };
     }
+
+    public function transactions()
+{
+    return $this->hasMany(Transaction::class, 'cashier_id');
+}
 }
