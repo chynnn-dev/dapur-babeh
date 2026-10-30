@@ -68,12 +68,19 @@
         </div>
 
         <nav class="sidebar-nav">
-            <a href="{{ route('admin.dashboard') }}"
-               class="sidebar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">Dashboard</a>
-            <a href="{{ route('admin.users.index') }}"
-               class="sidebar-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">Kelola User</a>
-        </nav>
-
+    <a href="{{ route('admin.dashboard') }}"
+       class="sidebar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">Dashboard</a>
+    <a href="{{ route('admin.categories.index') }}"
+       class="sidebar-link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">Kategori</a>
+    <a href="{{ route('admin.menus.index') }}"
+       class="sidebar-link {{ request()->routeIs('admin.menus.*') ? 'active' : '' }}">Menu</a>
+    <a href="{{ route('admin.tables.index') }}"
+       class="sidebar-link {{ request()->routeIs('admin.tables.*') ? 'active' : '' }}">Meja</a>
+    <a href="{{ route('admin.users.index') }}"
+       class="sidebar-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">Kelola User</a>
+    <a href="{{ route('admin.settings.index') }}"
+       class="sidebar-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">Pengaturan</a>
+</nav>
         <div class="sidebar-foot">
             <div style="font-weight:500">{{ auth()->user()->name }}</div>
             <div class="role">{{ \App\Models\User::ROLES[auth()->user()->role] }}</div>
