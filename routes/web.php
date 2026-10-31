@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\TableController;
 use App\Http\Controllers\Cashier\CashierController;
 use App\Http\Controllers\Kitchen\KitchenController;
 use App\Http\Controllers\Kitchen\StockController;
+use App\Http\Controllers\Admin\ReportController;
 
 Route::get('/', fn () => redirect()->route('login'));
 
@@ -40,6 +41,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
     Route::patch('settings/table-management', [SettingController::class, 'toggleTableManagement'])->name('settings.table-management');
+
+    Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
 });
 
 Route::middleware(['auth', 'role:cashier'])->prefix('cashier')->name('cashier.')->group(function () {

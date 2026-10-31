@@ -78,6 +78,8 @@
        class="sidebar-link {{ request()->routeIs('admin.tables.*') ? 'active' : '' }}">Meja</a>
     <a href="{{ route('admin.users.index') }}"
        class="sidebar-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">Kelola User</a>
+    <a href="{{ route('admin.reports.index') }}"
+   class="sidebar-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">Laporan</a>
     <a href="{{ route('admin.settings.index') }}"
        class="sidebar-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">Pengaturan</a>
 </nav>
