@@ -11,6 +11,7 @@ use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class CashierController extends Controller
@@ -34,43 +35,47 @@ class CashierController extends Controller
                 'image'       => $m->image_url,
             ]);
 
-        $tables = $useTables
-            ? RestaurantTable::where('status', 'available')
-                ->orderByRaw('CAST(table_number AS UNSIGNED), table_number')
-                ->get(['id', 'table_number'])
-            : collect();
+        $tables    = $useTables ? $this->tableList() : [];
+        $methods   = $this->availableMethods();
+        $qrisImage = Setting::qrisUrl();
 
-        return view('cashier.pos', compact('useTables', 'categories', 'menus', 'tables'));
+        return view('cashier.pos', compact('useTables', 'categories', 'menus', 'tables', 'methods', 'qrisImage'));
     }
 
     public function store(Request $request): JsonResponse
     {
         $useTables = Setting::isActive(Setting::TABLE_MANAGEMENT);
+        $methods   = $this->availableMethods();
 
         $data = $request->validate([
-            'table_id'         => [$useTables ? 'required' : 'nullable', 'exists:tables,id'],
-            'cash_received'    => ['required', 'integer', 'min:0'],
-            'items'            => ['required', 'array', 'min:1'],
-            'items.*.menu_id'  => ['required', 'exists:menus,id'],
-            'items.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
-            'items.*.notes'    => ['nullable', 'string', 'max:255'],
+            'table_id'          => [$useTables ? 'required' : 'nullable', 'exists:tables,id'],
+            'payment_method'    => ['required', Rule::in(array_keys($methods))],
+            'cash_received'     => ['required_if:payment_method,cash', 'nullable', 'integer', 'min:0'],
+            'payment_reference' => ['nullable', 'string', 'max:100'],
+            'items'             => ['required', 'array', 'min:1'],
+            'items.*.menu_id'   => ['required', 'exists:menus,id'],
+            'items.*.quantity'  => ['required', 'integer', 'min:1', 'max:99'],
+            'items.*.notes'     => ['nullable', 'string', 'max:255'],
         ], [
-            'table_id.required'     => 'Pilih nomor meja terlebih dahulu.',
-            'cash_received.required' => 'Masukkan uang yang diterima.',
-            'items.required'        => 'Keranjang masih kosong.',
-            'items.min'             => 'Keranjang masih kosong.',
+            'table_id.required'          => 'Pilih nomor meja terlebih dahulu.',
+            'payment_method.in'          => 'Metode pembayaran tidak tersedia. Muat ulang halaman.',
+            'cash_received.required_if'  => 'Masukkan uang yang diterima.',
+            'items.required'             => 'Keranjang masih kosong.',
+            'items.min'                  => 'Keranjang masih kosong.',
         ]);
 
         // Jika fitur meja OFF, abaikan table_id apa pun yang dikirim klien
         $tableId = $useTables ? $data['table_id'] : null;
+        $isCash  = $data['payment_method'] === 'cash';
 
-        $transaction = DB::transaction(function () use ($data, $tableId) {
+        $transaction = DB::transaction(function () use ($data, $tableId, $isCash) {
             $table = null;
 
             if ($tableId) {
                 $table = RestaurantTable::lockForUpdate()->findOrFail($tableId);
 
-                if ($table->status !== 'available') {
+                // Meja reservasi boleh dipakai (tamu reservasi datang); hanya meja terisi yang ditolak
+                if ($table->status === 'occupied') {
                     throw ValidationException::withMessages(['table_id' => 'Meja sedang terisi, pilih meja lain.']);
                 }
             }
@@ -99,19 +104,23 @@ class CashierController extends Controller
                 ];
             }
 
-            if ($data['cash_received'] < $total) {
+            if ($isCash && $data['cash_received'] < $total) {
                 throw ValidationException::withMessages(['cash_received' => 'Uang yang diterima kurang dari total.']);
             }
 
+            // Non-tunai: dibayar pas, tanpa kembalian
+            $cashReceived = $isCash ? $data['cash_received'] : $total;
+
             $transaction = Transaction::create([
-                'invoice_number' => $this->generateInvoiceNumber(),
-                'table_id'       => $tableId,
-                'cashier_id'     => auth()->id(),
-                'total_amount'   => $total,
-                'cash_received'  => $data['cash_received'],
-                'change_amount'  => $data['cash_received'] - $total,
-                'payment_method' => 'cash',
-                'status'         => 'paid',
+                'invoice_number'    => $this->generateInvoiceNumber(),
+                'table_id'          => $tableId,
+                'cashier_id'        => auth()->id(),
+                'total_amount'      => $total,
+                'cash_received'     => $cashReceived,
+                'change_amount'     => $cashReceived - $total,
+                'payment_method'    => $data['payment_method'],
+                'payment_reference' => $isCash ? null : ($data['payment_reference'] ?? null),
+                'status'            => 'paid',
             ]);
 
             $transaction->items()->createMany($rows);
@@ -133,6 +142,71 @@ class CashierController extends Controller
         $transaction->load(['items.menu', 'table', 'cashier']);
 
         return view('cashier.receipt', compact('transaction'));
+    }
+
+    // Dipanggil POS tiap beberapa detik agar peta meja selalu terbaru
+    public function tables(): JsonResponse
+    {
+        $enabled = Setting::isActive(Setting::TABLE_MANAGEMENT);
+
+        return response()->json([
+            'enabled' => $enabled,
+            'tables'  => $enabled ? $this->tableList() : [],
+        ]);
+    }
+
+    // Kasir menandai atau membatalkan reservasi meja
+    public function toggleReservation(RestaurantTable $table): JsonResponse
+    {
+        if (! Setting::isActive(Setting::TABLE_MANAGEMENT)) {
+            return response()->json(['message' => 'Fitur Manajemen Meja sedang nonaktif.'], 422);
+        }
+
+        $status = DB::transaction(function () use ($table) {
+            $row = RestaurantTable::lockForUpdate()->findOrFail($table->id);
+
+            if ($row->status === 'occupied') {
+                return null;
+            }
+
+            $row->update(['status' => $row->status === 'reserved' ? 'available' : 'reserved']);
+
+            return $row->status;
+        });
+
+        if ($status === null) {
+            return response()->json(['message' => 'Meja sedang terisi, status tidak bisa diubah.'], 422);
+        }
+
+        return response()->json(['status' => $status]);
+    }
+
+    // Metode pembayaran yang sedang aktif (tunai selalu ada)
+    private function availableMethods(): array
+    {
+        $methods = ['cash' => 'Tunai'];
+
+        if (Setting::isActive(Setting::PAYMENT_QRIS) && Setting::getValue(Setting::QRIS_IMAGE)) {
+            $methods['qris'] = 'QRIS';
+        }
+
+        if (Setting::isActive(Setting::PAYMENT_DEBIT)) {
+            $methods['debit'] = 'Debit';
+        }
+
+        return $methods;
+    }
+
+    private function tableList(): array
+    {
+        return RestaurantTable::orderByRaw('CAST(table_number AS UNSIGNED), table_number')
+            ->get(['id', 'table_number', 'status'])
+            ->map(fn ($t) => [
+                'id'     => $t->id,
+                'number' => $t->table_number,
+                'status' => $t->status,
+            ])
+            ->all();
     }
 
     private function generateInvoiceNumber(): string

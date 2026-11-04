@@ -14,16 +14,6 @@
             @error('table_number') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
         </div>
 
-        <div>
-            <label for="status" class="block text-sm font-medium">Status</label>
-            <select id="status" name="status"
-                    class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500">
-                <option value="available" @selected(old('status', $table->status) === 'available')>Kosong</option>
-                <option value="occupied" @selected(old('status', $table->status) === 'occupied')>Terisi</option>
-            </select>
-            @error('status') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-        </div>
-
         <div class="flex gap-2">
             <button class="rounded-lg bg-orange-600 px-5 py-2 text-sm font-semibold text-white hover:bg-orange-700">Simpan</button>
             <a href="{{ route('admin.tables.index') }}" class="rounded-lg border px-5 py-2 text-sm hover:bg-gray-50">Batal</a>

@@ -14,22 +14,21 @@
         <div id="menu-grid" class="menu-grid"></div>
     </section>
 
-    {{-- Kanan: keranjang & pembayaran --}}
+    {{-- Kanan: meja, keranjang & pembayaran --}}
     <aside class="pos-cart">
         <h2>Pesanan</h2>
 
         @if ($useTables)
             <div class="field">
-                <label for="table">Nomor Meja</label>
-                <select id="table">
-                    <option value="">Pilih meja</option>
-                    @foreach ($tables as $table)
-                        <option value="{{ $table->id }}">Meja {{ $table->table_number }}</option>
-                    @endforeach
-                </select>
-                @if ($tables->isEmpty())
-                    <div class="warn">Semua meja sedang terisi.</div>
-                @endif
+                <label>Pilih Meja <span id="table-selected" class="selected-label">Belum dipilih</span></label>
+                <div class="legend">
+                    <span><i class="dot" style="background:#86efac"></i>Kosong</span>
+                    <span><i class="dot" style="background:#ef4444"></i>Terisi</span>
+                    <span><i class="dot" style="background:#f59e0b"></i>Reservasi</span>
+                    <span><i class="dot" style="background:#0ea5e9"></i>Dipilih</span>
+                </div>
+                <button type="button" id="reserve-mode" class="mode-btn">Atur Reservasi: MATI</button>
+                <div id="table-map" class="table-map"></div>
             </div>
         @else
             <span class="takeaway">Takeaway / Tanpa Meja</span>
@@ -40,19 +39,50 @@
         <div class="totals">
             <div class="trow big"><span>Total</span><span id="total">Rp 0</span></div>
 
-            <div class="field">
-                <label for="cash">Uang Diterima (Rp)</label>
-                <input id="cash" type="number" min="0" step="500" inputmode="numeric" placeholder="0">
+            {{-- Pilihan metode (hanya muncul jika ada metode selain tunai) --}}
+            @if (count($methods) > 1)
+                <div class="methods" id="methods">
+                    @foreach ($methods as $key => $label)
+                        <button type="button" class="method {{ $loop->first ? 'active' : '' }}" data-method="{{ $key }}">{{ $label }}</button>
+                    @endforeach
+                </div>
+            @endif
+
+            {{-- Tunai --}}
+            <div id="cash-box" class="pay-section">
+                <div class="field">
+                    <label for="cash">Uang Diterima (Rp)</label>
+                    <input id="cash" type="number" min="0" step="500" inputmode="numeric" placeholder="0">
+                </div>
+
+                <div class="quick">
+                    <button type="button" data-cash="exact">Uang Pas</button>
+                    <button type="button" data-cash="20000">20.000</button>
+                    <button type="button" data-cash="50000">50.000</button>
+                    <button type="button" data-cash="100000">100.000</button>
+                </div>
+
+                <div class="trow"><span>Kembalian</span><strong id="change">-</strong></div>
             </div>
 
-            <div class="quick">
-                <button type="button" data-cash="exact">Uang Pas</button>
-                <button type="button" data-cash="20000">20.000</button>
-                <button type="button" data-cash="50000">50.000</button>
-                <button type="button" data-cash="100000">100.000</button>
-            </div>
+            {{-- QRIS / Debit --}}
+            <div id="noncash-box" class="pay-section" hidden>
+                @if ($qrisImage)
+                    <div id="qris-box" class="qris-box" hidden>
+                        <img src="{{ $qrisImage }}" alt="QRIS toko">
+                        <p>Minta pelanggan scan QRIS. Pastikan dana sudah masuk sebelum konfirmasi.</p>
+                    </div>
+                @endif
 
-            <div class="trow"><span>Kembalian</span><strong id="change">-</strong></div>
+                <div id="debit-hint" class="hint" hidden>
+                    Proses pembayaran di mesin EDC. Konfirmasi setelah transaksi berhasil.
+                </div>
+
+                <div class="field">
+                    <label for="reference">No. Referensi (opsional)</label>
+                    <input id="reference" type="text" maxlength="100" placeholder="Mis. 4 digit kartu / no. approval">
+                </div>
+            </div>
 
             <div id="error-box" class="error-box" hidden></div>
 
@@ -65,22 +95,31 @@
 @push('scripts')
 <script>
 (function () {
-    const menus      = @json($menus);
-    const categories = @json($categories);
-    const useTables  = @json($useTables);
-    const payUrl     = @json(route('cashier.store'));
-    const csrf       = document.querySelector('meta[name="csrf-token"]').content;
+    const menus       = @json($menus);
+    const categories  = @json($categories);
+    const useTables   = @json($useTables);
+    const payUrl      = @json(route('cashier.store'));
+    const tablesUrl   = @json(route('cashier.tables'));
+    const reserveBase = @json(url('/cashier/tables'));
+    const csrf        = document.querySelector('meta[name="csrf-token"]').content;
+
+    const STATUS_LABEL = { available: 'Kosong', occupied: 'Terisi', reserved: 'Reservasi' };
 
     const cart = new Map();   // menu_id => { menu, qty, notes }
-    let activeCat = 'all';
-    let keyword   = '';
-    let paying    = false;
+    let tables        = @json($tables);
+    let selectedTable = null; // id meja yang dipilih
+    let reserveMode   = false;
+    let method        = 'cash';
+    let activeCat     = 'all';
+    let keyword       = '';
+    let paying        = false;
 
-    const $      = (id) => document.getElementById(id);
-    const rupiah = (n) => 'Rp ' + Number(n).toLocaleString('id-ID');
-    const esc    = (s) => String(s).replace(/[&<>"']/g, (c) =>
+    const $         = (id) => document.getElementById(id);
+    const rupiah    = (n) => 'Rp ' + Number(n).toLocaleString('id-ID');
+    const esc       = (s) => String(s).replace(/[&<>"']/g, (c) =>
         ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const total  = () => [...cart.values()].reduce((sum, l) => sum + l.menu.price * l.qty, 0);
+    const total     = () => [...cart.values()].reduce((sum, l) => sum + l.menu.price * l.qty, 0);
+    const tableById = (id) => tables.find((t) => t.id === id);
 
     function renderCats() {
         const items = [{ id: 'all', name: 'Semua' }, ...categories];
@@ -132,19 +171,82 @@
         updateTotals();
     }
 
+    function renderTables() {
+        const el = $('table-map');
+        if (!el) return;
+
+        el.innerHTML = tables.map((t) => {
+            const cls = (!reserveMode && selectedTable === t.id) ? 'selected' : t.status;
+            return `<button type="button" class="tbl ${cls}" data-table="${t.id}"
+                        ${t.status === 'occupied' ? 'disabled' : ''}
+                        title="Meja ${esc(t.number)} - ${STATUS_LABEL[t.status]}">${esc(t.number)}</button>`;
+        }).join('');
+
+        const chosen = selectedTable ? tableById(selectedTable) : null;
+        $('table-selected').textContent = reserveMode
+            ? 'Mode reservasi'
+            : (chosen ? 'Meja ' + chosen.number : 'Belum dipilih');
+    }
+
     function updateTotals() {
         const t    = total();
         const cash = parseInt($('cash').value || '0', 10);
+        const ok   = method === 'cash' ? (t > 0 && cash >= t) : t > 0;
 
         $('total').textContent  = rupiah(t);
         $('change').textContent = (t > 0 && cash >= t) ? rupiah(cash - t) : '-';
-        $('pay-btn').disabled   = paying || !(t > 0 && cash >= t);
+        $('pay-btn').disabled   = paying || !ok;
+    }
+
+    // Tampilkan bagian pembayaran sesuai metode yang dipilih
+    function applyMethod() {
+        $('cash-box').hidden    = method !== 'cash';
+        $('noncash-box').hidden = method === 'cash';
+        if ($('qris-box')) $('qris-box').hidden = method !== 'qris';
+        $('debit-hint').hidden  = method !== 'debit';
+
+        document.querySelectorAll('.method').forEach((b) =>
+            b.classList.toggle('active', b.dataset.method === method));
+
+        $('pay-btn').textContent = method === 'cash' ? 'Bayar' : 'Konfirmasi Pembayaran';
+        updateTotals();
     }
 
     function showError(message) {
         const box = $('error-box');
         box.textContent = message;
         box.hidden = false;
+    }
+
+    // Ambil status meja terbaru dari server
+    async function refreshTables() {
+        try {
+            const res = await fetch(tablesUrl, { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) return;
+            const data = await res.json();
+
+            // Admin mengubah pengaturan fitur meja
+            if (data.enabled !== useTables) {
+                if (cart.size === 0) {
+                    window.location.reload();
+                } else {
+                    showError('Pengaturan meja diubah admin. Selesaikan pesanan ini, lalu muat ulang halaman.');
+                }
+                return;
+            }
+
+            tables = data.tables;
+
+            const chosen = selectedTable ? tableById(selectedTable) : null;
+            if (selectedTable && (!chosen || chosen.status === 'occupied')) {
+                selectedTable = null;
+                showError('Meja yang dipilih sudah terisi. Pilih meja lain.');
+            }
+
+            renderTables();
+        } catch (err) {
+            // abaikan, dicoba lagi pada putaran berikutnya
+        }
     }
 
     // Filter kategori & pencarian
@@ -196,7 +298,64 @@
         cart.get(Number(e.target.closest('.line').dataset.id)).notes = e.target.value;
     });
 
-    // Uang diterima
+    // Peta meja: pilih meja, atau atur reservasi bila mode reservasi aktif
+    $('table-map')?.addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-table]');
+        if (!btn) return;
+
+        const t = tableById(Number(btn.dataset.table));
+        if (!t || t.status === 'occupied') return;
+
+        // Mode reservasi: tandai atau batalkan reservasi
+        if (reserveMode) {
+            try {
+                const res = await fetch(`${reserveBase}/${t.id}/reservation`, {
+                    method: 'PATCH',
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                });
+
+                if (!res.ok) {
+                    const data = await res.json();
+                    showError(data.message || 'Gagal mengubah reservasi.');
+                }
+            } catch (err) {
+                showError('Gagal terhubung ke server.');
+            }
+
+            refreshTables();
+            return;
+        }
+
+        // Mode pilih meja
+        if (t.status === 'reserved' && selectedTable !== t.id &&
+            !confirm(`Meja ${t.number} sudah direservasi. Pilih untuk tamu yang sudah reservasi?`)) {
+            return;
+        }
+
+        selectedTable = (selectedTable === t.id) ? null : t.id;
+        renderTables();
+    });
+
+    $('reserve-mode')?.addEventListener('click', (e) => {
+        reserveMode = !reserveMode;
+        selectedTable = null;
+
+        e.currentTarget.textContent = reserveMode ? 'Atur Reservasi: HIDUP' : 'Atur Reservasi: MATI';
+        e.currentTarget.classList.toggle('on', reserveMode);
+        $('table-map').classList.toggle('reserve-mode', reserveMode);
+
+        renderTables();
+    });
+
+    // Pilih metode pembayaran
+    $('methods')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-method]');
+        if (!btn) return;
+        method = btn.dataset.method;
+        applyMethod();
+    });
+
+    // Uang diterima (tunai)
     $('cash').addEventListener('input', updateTotals);
 
     document.querySelectorAll('[data-cash]').forEach((btn) => {
@@ -206,11 +365,11 @@
         });
     });
 
-    // Bayar
+    // Bayar / konfirmasi pembayaran
     $('pay-btn').addEventListener('click', async () => {
         $('error-box').hidden = true;
 
-        if (useTables && !$('table').value) {
+        if (useTables && !selectedTable) {
             showError('Pilih nomor meja terlebih dahulu.');
             return;
         }
@@ -227,8 +386,10 @@
                     'X-CSRF-TOKEN': csrf,
                 },
                 body: JSON.stringify({
-                    table_id: useTables ? $('table').value : null,
-                    cash_received: parseInt($('cash').value || '0', 10),
+                    table_id: useTables ? selectedTable : null,
+                    payment_method: method,
+                    cash_received: method === 'cash' ? parseInt($('cash').value || '0', 10) : total(),
+                    payment_reference: method === 'cash' ? null : ($('reference').value.trim() || null),
                     items: [...cart.values()].map((l) => ({
                         menu_id: l.menu.id,
                         quantity: l.qty,
@@ -246,6 +407,7 @@
 
             const messages = data.errors ? Object.values(data.errors).flat() : [data.message || 'Terjadi kesalahan.'];
             showError(messages.join('\n'));
+            refreshTables();
         } catch (err) {
             showError('Gagal terhubung ke server. Coba lagi.');
         }
@@ -257,6 +419,9 @@
     renderCats();
     renderMenus();
     renderCart();
+    renderTables();
+    applyMethod();
+    setInterval(refreshTables, 5000);
 })();
 </script>
 @endpush

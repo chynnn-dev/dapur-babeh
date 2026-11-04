@@ -76,10 +76,14 @@
        class="sidebar-link {{ request()->routeIs('admin.menus.*') ? 'active' : '' }}">Menu</a>
     <a href="{{ route('admin.tables.index') }}"
        class="sidebar-link {{ request()->routeIs('admin.tables.*') ? 'active' : '' }}">Meja</a>
+       <a href="{{ route('admin.front.edit') }}"
+   class="sidebar-link {{ request()->routeIs('admin.front.*') ? 'active' : '' }}">Halaman Depan</a>
+<a href="{{ route('admin.posts.index') }}"
+   class="sidebar-link {{ request()->routeIs('admin.posts.*') ? 'active' : '' }}">Postingan</a>
     <a href="{{ route('admin.users.index') }}"
        class="sidebar-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">Kelola User</a>
-    <a href="{{ route('admin.reports.index') }}"
-   class="sidebar-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">Laporan</a>
+    {{-- <a href="{{ route('admin.reports.index') }}"
+   class="sidebar-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">Laporan</a> --}}
     <a href="{{ route('admin.settings.index') }}"
        class="sidebar-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">Pengaturan</a>
 </nav>

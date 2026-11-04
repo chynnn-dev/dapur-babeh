@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\RestaurantTable;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use App\Models\Setting;
 
 class TableController extends Controller
 {
@@ -14,10 +14,11 @@ class TableController extends Controller
     {
         $tables = RestaurantTable::orderByRaw('CAST(table_number AS UNSIGNED), table_number')->get();
 
-return view('admin.tables.index', [
-    'tables'    => $tables,
-    'featureOn' => Setting::isActive(Setting::TABLE_MANAGEMENT),
-]);    }
+        return view('admin.tables.index', [
+            'tables'    => $tables,
+            'featureOn' => Setting::isActive(Setting::TABLE_MANAGEMENT),
+        ]);
+    }
 
     public function store(Request $request)
     {
@@ -39,7 +40,6 @@ return view('admin.tables.index', [
     {
         $data = $request->validate([
             'table_number' => ['required', 'string', 'max:20', Rule::unique('tables', 'table_number')->ignore($table->id)],
-            'status'       => ['required', Rule::in(['available', 'occupied'])],
         ]);
 
         $table->update($data);

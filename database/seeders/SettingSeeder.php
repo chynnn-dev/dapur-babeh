@@ -13,5 +13,8 @@ class SettingSeeder extends Seeder
             'key_name'  => Setting::TABLE_MANAGEMENT,
             'is_active' => false,
         ]);
+
+        Setting::create(['key_name' => Setting::PAYMENT_QRIS,  'is_active' => false]);
+Setting::create(['key_name' => Setting::PAYMENT_DEBIT, 'is_active' => false]);
     }
 }

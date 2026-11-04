@@ -6,11 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
-    protected $fillable = [
-        'invoice_number', 'table_id', 'cashier_id', 'total_amount',
-        'cash_received', 'change_amount', 'payment_method', 'status',
-    ];
-
+   protected $fillable = [
+    'invoice_number', 'table_id', 'cashier_id', 'total_amount',
+    'cash_received', 'change_amount', 'payment_method', 'payment_reference', 'status',
+];
     public function table()
     {
         return $this->belongsTo(RestaurantTable::class, 'table_id');

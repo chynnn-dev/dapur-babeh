@@ -64,9 +64,16 @@
         <div class="sep"></div>
 
         <div class="row bold"><span>TOTAL</span><span>{{ number_format($transaction->total_amount, 0, ',', '.') }}</span></div>
-        <div class="row"><span>Tunai</span><span>{{ number_format($transaction->cash_received, 0, ',', '.') }}</span></div>
-        <div class="row"><span>Kembali</span><span>{{ number_format($transaction->change_amount, 0, ',', '.') }}</span></div>
+       @php $methodLabels = ['cash' => 'Tunai', 'qris' => 'QRIS', 'debit' => 'Debit']; @endphp
 
+<div class="row"><span>Metode</span><span>{{ $methodLabels[$transaction->payment_method] ?? $transaction->payment_method }}</span></div>
+
+@if ($transaction->payment_method === 'cash')
+    <div class="row"><span>Tunai</span><span>{{ number_format($transaction->cash_received, 0, ',', '.') }}</span></div>
+    <div class="row"><span>Kembali</span><span>{{ number_format($transaction->change_amount, 0, ',', '.') }}</span></div>
+@elseif ($transaction->payment_reference)
+    <div class="row"><span>Ref</span><span>{{ $transaction->payment_reference }}</span></div>
+@endif
         <div class="sep"></div>
 
         <div class="center">Terima kasih atas kunjungan Anda</div>
