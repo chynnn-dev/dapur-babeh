@@ -14,6 +14,9 @@ use App\Http\Controllers\Kitchen\StockController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Admin\FrontPageController;
 use App\Http\Controllers\Admin\PostController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
+
 // use App\Http\Controllers\Admin\ReportController; // Sudah ada
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -46,11 +49,15 @@ Route::get('front-page', [FrontPageController::class, 'edit'])->name('front.edit
 Route::put('front-page', [FrontPageController::class, 'update'])->name('front.update');
 
 Route::resource('posts', PostController::class)->except('show');
+Route::get('/ulasan', [AdminReviewController::class, 'index'])->name('reviews.index');
+    Route::patch('/ulasan/{review}', [AdminReviewController::class, 'toggle'])->name('reviews.toggle');
+    Route::delete('/ulasan/{review}', [AdminReviewController::class, 'destroy'])->name('reviews.destroy');
+});
     // TAMBAHKAN ROUTE REPORTS DI SINI
     // Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     // Jika Anda butuh resource lengkap untuk reports, bisa ganti baris atas dengan:
     // Route::resource('reports', ReportController::class)->only(['index', 'show']);
-});
+
 
 // Role Cashier
 Route::middleware(['auth', 'role:cashier'])->prefix('cashier')->name('cashier.')->group(function () {
@@ -70,3 +77,8 @@ Route::middleware(['auth', 'role:kitchen'])->prefix('kitchen')->name('kitchen.')
     Route::get('/stock', [StockController::class, 'index'])->name('stock');
     Route::patch('/stock/{menu}', [StockController::class, 'toggle'])->name('stock.toggle');
 });
+
+//review
+Route::post('/ulasan', [ReviewController::class, 'store'])
+    ->middleware('throttle:3,10')
+    ->name('reviews.store');

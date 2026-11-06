@@ -35,6 +35,7 @@
                 background: linear-gradient(135deg, var(--green-d), var(--green)); overflow: hidden; }
         .slide { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 1s; }
         .slide.active { opacity: 1; }
+        .slide video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
         .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(rgba(0,0,0,.25), rgba(0,0,0,.5)); }
         .hero-inner { position: relative; z-index: 2; padding: 6rem 1.25rem 4rem; }
         .hero-title { display: inline-block; margin: 0; padding: .6rem 1.5rem; background: rgba(15,95,70,.88); font-size: clamp(1.5rem, 4vw, 2.6rem); font-weight: 900; text-transform: uppercase; }
@@ -75,11 +76,44 @@
         .contact { text-align: center; }
         .btn-wa { display: inline-flex; align-items: center; gap: .7rem; padding: .9rem 2rem; background: var(--green); color: var(--orange); border-radius: .4rem; font-weight: 900; text-transform: uppercase; letter-spacing: .03em; }
         .btn-wa:hover { background: var(--green-d); }
-        .info { max-width: 46rem; margin: 2.5rem auto 0; display: grid; gap: 1.4rem; text-align: center; }
-        .info h3 { margin: 0 0 .2rem; font-size: 1rem; text-transform: uppercase; letter-spacing: .06em; }
-        .info p { margin: 0; white-space: pre-line; }
         .btn-maps { display: inline-block; margin-top: .6rem; padding: .5rem 1.3rem; border: 2px solid var(--green); border-radius: .4rem; font-weight: 700; }
         .btn-maps:hover { background: var(--green); color: #fff; }
+
+        /* Reservasi & Peta */
+        .contact-grid { display: grid; gap: 2rem; grid-template-columns: 1fr 1fr; align-items: start; text-align: left; }
+        .card { background: #fff; border-radius: .6rem; padding: 1.5rem; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+        .card h3 { margin: 0 0 1rem; font-size: 1.1rem; text-transform: uppercase; letter-spacing: .05em; }
+        .rsv-form { display: grid; gap: .9rem; grid-template-columns: 1fr 1fr; }
+        .rsv-form .full { grid-column: 1 / -1; }
+        .rsv-form label { display: grid; gap: .25rem; font-size: .85rem; font-weight: 700; }
+        .rsv-form input, .rsv-form textarea { font: inherit; padding: .6rem .7rem; border: 1px solid #cdbfa8; border-radius: .35rem; background: #fffdf9; color: var(--ink); width: 100%; }
+        .rsv-form input:focus, .rsv-form textarea:focus { outline: 2px solid var(--orange); border-color: var(--orange); }
+        .rsv-form button { cursor: pointer; border: 0; font: inherit; font-weight: 900; }
+        .map-wrap { overflow: hidden; border-radius: .6rem; box-shadow: 0 4px 16px rgba(0,0,0,.08); background: #ddd; }
+        .map-wrap iframe { display: block; width: 100%; height: 26rem; border: 0; }
+        .map-info { background: #fff; padding: 1rem 1.25rem; }
+        .map-info h3 { margin: 0 0 .3rem; font-size: 1rem; text-transform: uppercase; letter-spacing: .05em; }
+        .map-info p { margin: 0 0 .5rem; white-space: pre-line; }
+        .note { font-size: .85rem; opacity: .75; }
+
+        #lokasi { background: #faf6ef; color: var(--green); }
+        #ulasan { background: var(--beige); color: var(--green); }
+
+        /* Ulasan */
+        .stars { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: .2rem; }
+        .rsv-form .stars input { position: absolute; opacity: 0; width: 0; height: 0; padding: 0; border: 0; }
+        .rsv-form .stars label { display: block; font-size: 2rem; line-height: 1; color: #cdbfa8; cursor: pointer; font-weight: 400; }
+        .stars input:checked ~ label, .stars label:hover, .stars label:hover ~ label { color: var(--orange); }
+        .hp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
+        .review-list { display: grid; gap: 1rem; }
+        .review { background: #fff; border-radius: .6rem; padding: 1.1rem 1.25rem; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+        .review-head { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+        .review-name { font-weight: 900; }
+        .review-stars { color: var(--orange); letter-spacing: .1em; }
+        .review p { margin: .4rem 0 0; white-space: pre-line; color: var(--ink); }
+        .review small { opacity: .6; }
+        .alert-ok { background: #e3f4ea; color: #0b4a37; padding: .7rem 1rem; border-radius: .4rem; margin-bottom: 1rem; font-weight: 700; }
+        .alert-err { background: #fdeaea; color: #a12626; padding: .7rem 1rem; border-radius: .4rem; margin-bottom: 1rem; font-size: .9rem; }
 
         .footer { background: var(--green-d); color: #cfe3da; text-align: center; padding: 1.5rem 1rem; font-size: .9rem; }
 
@@ -98,10 +132,20 @@
             .arrow { width: 2.4rem; height: 2.4rem; }
             .arrow.prev { left: .6rem; }
             .arrow.next { right: .6rem; }
+            .contact-grid { grid-template-columns: 1fr; }
+            .rsv-form { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
+
+@php
+    $waNumber = \App\Models\SiteContent::whatsappNumber($c);
+    $mapEmbed = \App\Models\SiteContent::mapEmbedUrl($c);
+    $reviews     = \App\Models\Review::approved()->latest()->take(12)->get();
+    $reviewCount = \App\Models\Review::approved()->count();
+    $reviewAvg   = $reviewCount ? round(\App\Models\Review::approved()->avg('rating'), 1) : 0;
+@endphp
 
 {{-- Navbar --}}
 <header id="header" class="header">
@@ -115,7 +159,9 @@
             <a href="#about" class="link">Tentang</a>
             <a href="#menu" class="link">Menu</a>
             <a href="#kontak" class="link">Kontak &amp; Reservasi</a>
+            <a href="#lokasi" class="link">Lokasi</a>
             <a href="#galeri" class="link">Galeri</a>
+            <a href="#ulasan" class="link">Ulasan</a>
 
             @auth
                 <a href="{{ auth()->user()->homeRoute() }}" class="btn-login">Dashboard</a>
@@ -129,7 +175,13 @@
 {{-- Hero --}}
 <section id="home" class="hero">
     @foreach ($slides as $slide)
-        <div class="slide {{ $loop->first ? 'active' : '' }}" style="background-image:url('{{ $slide->image_url }}')"></div>
+        <div class="slide {{ $loop->first ? 'active' : '' }}" style="background-image:url('{{ $slide->image_url }}')">
+            @if ($slide->video_url)
+                <video muted playsinline preload="metadata" poster="{{ $slide->image_url }}">
+                    <source src="{{ $slide->video_url }}" type="{{ str_ends_with($slide->video, '.webm') ? 'video/webm' : 'video/mp4' }}">
+                </video>
+            @endif
+        </div>
     @endforeach
 
     @if ($slides->count() > 1)
@@ -145,9 +197,7 @@
 
         <div class="hero-actions">
             <a href="#about" class="btn btn-outline">Tentang Kami</a>
-            @if ($waUrl)
-                <a href="{{ $waUrl }}" target="_blank" rel="noopener" class="btn btn-fill">Reservasi</a>
-            @endif
+            <a href="#kontak" class="btn btn-fill">Reservasi</a>
         </div>
     </div>
 
@@ -192,31 +242,84 @@
     <div class="container contact">
         <h2>Kontak <b>&amp; Reservasi</b></h2>
 
-        @if ($waUrl)
-            <a href="{{ $waUrl }}" target="_blank" rel="noopener" class="btn-wa">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 20z"/></svg>
-                Reservasi via WhatsApp
-            </a>
-        @endif
+        <div class="contact-grid">
+            {{-- Form reservasi --}}
+            <div class="card">
+                <h3>Reservasi Meja</h3>
 
-        <div class="info">
-            @if ($c['open_hours'])
-                <div>
-                    <h3>Jam Buka</h3>
-                    <p>{{ $c['open_hours'] }}</p>
+                @if ($waNumber)
+                    <form id="rsv-form" class="rsv-form">
+                        <label class="full">Nama
+                            <input type="text" name="nama" required maxlength="60" placeholder="Nama Anda">
+                        </label>
+                        <label>Tanggal
+                            <input type="date" name="tanggal" required>
+                        </label>
+                        <label>Jam
+                            <input type="time" name="jam" required>
+                        </label>
+                        <label class="full">Jumlah Orang
+                            <input type="number" name="jumlah" required min="1" max="100" value="2">
+                        </label>
+                        <label class="full">Catatan (opsional)
+                            <textarea name="catatan" rows="3" maxlength="300" placeholder="Contoh: dekat jendela, ada anak kecil"></textarea>
+                        </label>
+                        <button type="submit" class="btn-wa full" style="justify-content:center">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 20z"/></svg>
+                            Kirim Reservasi via WhatsApp
+                        </button>
+                    </form>
+                    <p class="note" style="margin-top:.8rem">Anda akan diarahkan ke WhatsApp. Reservasi dikonfirmasi setelah kami membalas pesan Anda.</p>
+                @else
+                    <p class="empty">Reservasi via WhatsApp akan segera tersedia.</p>
+                @endif
+
+                @if ($c['open_hours'])
+                    <p style="margin:1.2rem 0 0"><b>Jam Buka:</b> {{ $c['open_hours'] }}</p>
+                @endif
+            </div>
+
+            {{-- Info kontak --}}
+            <div class="card">
+                <h3>Informasi</h3>
+                @if ($c['address'])
+                    <p><b>Alamat</b><br>{{ $c['address'] }}</p>
+                @endif
+                @if ($c['open_hours'])
+                    <p><b>Jam Buka</b><br>{{ $c['open_hours'] }}</p>
+                @endif
+                <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem">
+                    @if ($waUrl)
+                        <a href="{{ $waUrl }}" target="_blank" rel="noopener" class="btn-wa" style="padding:.6rem 1.2rem">Chat WhatsApp</a>
+                    @endif
+                    <a href="#lokasi" class="btn-maps" style="margin-top:0">Lihat Peta</a>
                 </div>
-            @endif
+            </div>
+        </div>
+    </div>
+</section>
 
-            @if ($c['address'])
-                <div>
-                    <h3>Alamat</h3>
-                    <p>{{ $c['address'] }}</p>
+{{-- Lokasi --}}
+<section id="lokasi" class="section">
+    <div class="container">
+        <h2>Lokasi <b>{{ $c['site_name'] }}</b></h2>
+
+        @if ($mapEmbed)
+            <div class="map-wrap">
+                <iframe src="{{ $mapEmbed }}" loading="lazy" allowfullscreen
+                        referrerpolicy="no-referrer-when-downgrade"
+                        title="Lokasi {{ $c['site_name'] }}"></iframe>
+                <div class="map-info">
+                    @if ($c['address'])
+                        <h3>Alamat</h3>
+                        <p>{{ $c['address'] }}</p>
+                    @endif
                     @if ($c['maps_url'])
                         <a href="{{ $c['maps_url'] }}" target="_blank" rel="noopener" class="btn-maps">Buka di Google Maps</a>
                     @endif
                 </div>
-            @endif
-        </div>
+            </div>
+        @endif
     </div>
 </section>
 
@@ -242,6 +345,70 @@
     </div>
 </section>
 
+{{-- Ulasan --}}
+<section id="ulasan" class="section">
+    <div class="container">
+        <h2>Ulasan <b>Pelanggan</b></h2>
+
+        @if ($reviewCount)
+            <p class="hours"><span class="review-stars">&#9733;</span> {{ $reviewAvg }} / 5 &middot; {{ $reviewCount }} ulasan</p>
+        @endif
+
+        <div class="contact-grid">
+            <div class="card">
+                <h3>Tulis Ulasan</h3>
+
+                @if (session('review_ok'))
+                    <div class="alert-ok">{{ session('review_ok') }}</div>
+                @endif
+                @if ($errors->any())
+                    <div class="alert-err">{{ $errors->first() }}</div>
+                @endif
+
+                <form method="POST" action="{{ route('reviews.store') }}" class="rsv-form">
+                    @csrf
+                    <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+                    <label class="full">Nama
+                        <input type="text" name="name" required maxlength="60" value="{{ old('name') }}" placeholder="Nama Anda">
+                    </label>
+
+                    <div class="full">
+                        <div style="font-size:.85rem;font-weight:700;margin-bottom:.25rem">Penilaian</div>
+                        <div class="stars">
+                            @for ($i = 5; $i >= 1; $i--)
+                                <input type="radio" id="st{{ $i }}" name="rating" value="{{ $i }}" required @checked(old('rating') == $i)>
+                                <label for="st{{ $i }}" title="{{ $i }} bintang">&#9733;</label>
+                            @endfor
+                        </div>
+                    </div>
+
+                    <label class="full">Ulasan
+                        <textarea name="comment" rows="4" required minlength="5" maxlength="500" placeholder="Ceritakan pengalaman Anda">{{ old('comment') }}</textarea>
+                    </label>
+
+                    <button type="submit" class="btn btn-fill full">Kirim Ulasan</button>
+                </form>
+            </div>
+
+            <div class="review-list">
+                @forelse ($reviews as $r)
+                    <div class="review">
+                        <div class="review-head">
+                            <span class="review-name">{{ $r->name }}</span>
+                            <span class="review-stars">@for ($i = 1; $i <= 5; $i++){{ $i <= $r->rating ? '★' : '☆' }}@endfor</span>
+                        </div>
+                        <p>{{ $r->comment }}</p>
+                        <small>{{ $r->created_at->format('d/m/Y') }}</small>
+                    </div>
+                @empty
+                    <p class="empty">Belum ada ulasan. Jadilah yang pertama!</p>
+                @endforelse
+            </div>
+        </div>
+    </div>
+</section>
+
 <footer class="footer">&copy; {{ date('Y') }} {{ $c['site_name'] }}. Semua hak dilindungi.</footer>
 
 <div id="lightbox" class="lightbox"><img src="" alt=""></div>
@@ -260,25 +427,51 @@
     document.querySelectorAll('.nav a').forEach((a) =>
         a.addEventListener('click', () => header.classList.remove('open')));
 
-    // Slider hero
+    // Slider hero (mendukung slide video)
     const slides = [...document.querySelectorAll('.slide')];
     let current = 0;
     let timer = null;
 
-    const show = (n) => {
+    const videoOf = (slide) => slide.querySelector('video');
+
+    function startCurrent() {
+        clearTimeout(timer);
+        const video = videoOf(slides[current]);
+
+        if (!video) {
+            // slide gambar: pindah tiap 5 detik
+            if (slides.length > 1) timer = setTimeout(() => show(current + 1), 5000);
+            return;
+        }
+
+        video.muted = true;
+        video.currentTime = 0;
+        video.loop = slides.length === 1;            // satu-satunya slide: diulang terus
+        video.onended = () => show(current + 1);     // beberapa slide: lanjut setelah video selesai
+
+        video.play().catch(() => {
+            // pemutaran otomatis diblokir: tampilkan sampul lalu lanjut
+            if (slides.length > 1) timer = setTimeout(() => show(current + 1), 5000);
+        });
+    }
+
+    function show(n) {
         if (!slides.length) return;
+
+        const old = videoOf(slides[current]);
+        if (old) old.pause();
+
         slides[current].classList.remove('active');
         current = (n + slides.length) % slides.length;
         slides[current].classList.add('active');
-    };
-    const auto = () => {
-        clearInterval(timer);
-        if (slides.length > 1) timer = setInterval(() => show(current + 1), 5000);
-    };
 
-    document.getElementById('prev')?.addEventListener('click', () => { show(current - 1); auto(); });
-    document.getElementById('next')?.addEventListener('click', () => { show(current + 1); auto(); });
-    auto();
+        startCurrent();
+    }
+
+    document.getElementById('prev')?.addEventListener('click', () => show(current - 1));
+    document.getElementById('next')?.addEventListener('click', () => show(current + 1));
+
+    if (slides.length) startCurrent();
 
     // Tandai menu yang sedang dilihat
     const links = [...document.querySelectorAll('.nav a.link')];
@@ -299,6 +492,43 @@
         fig.addEventListener('click', () => { boxImg.src = fig.dataset.zoom; box.classList.add('show'); }));
     box.addEventListener('click', () => box.classList.remove('show'));
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') box.classList.remove('show'); });
+
+    @if (session('review_ok') || $errors->any())
+    document.getElementById('ulasan').scrollIntoView();
+    @endif
+
+    // Form reservasi -> WhatsApp
+    const form = document.getElementById('rsv-form');
+    if (form) {
+        const WA_NUMBER = @json($waNumber);
+        const WA_INTRO  = @json($c['whatsapp_message']);
+
+        // Tanggal minimal hari ini
+        const today = new Date();
+        today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+        form.tanggal.min = today.toISOString().slice(0, 10);
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const tgl = new Date(form.tanggal.value + 'T00:00:00').toLocaleDateString('id-ID', {
+                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+            });
+
+            const lines = [
+                WA_INTRO,
+                '',
+                'Nama: ' + form.nama.value.trim(),
+                'Tanggal: ' + tgl,
+                'Jam: ' + form.jam.value + ' WIB',
+                'Jumlah orang: ' + form.jumlah.value,
+            ];
+            if (form.catatan.value.trim()) lines.push('Catatan: ' + form.catatan.value.trim());
+
+            const url = 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent(lines.join('\n'));
+            window.open(url, '_blank', 'noopener');
+        });
+    }
 })();
 </script>
 </body>

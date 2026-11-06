@@ -12,8 +12,7 @@ class Post extends Model
         'gallery' => 'Galeri',
     ];
 
-    protected $fillable = ['type', 'title', 'caption', 'image', 'sort_order', 'is_published'];
-
+protected $fillable = ['type', 'title', 'caption', 'image', 'video', 'sort_order', 'is_published'];
     protected $casts = ['is_published' => 'boolean'];
 
     public function scopePublished($query)
@@ -35,4 +34,9 @@ class Post extends Model
     {
         return asset('storage/' . $this->image);
     }
+
+    public function getVideoUrlAttribute(): ?string
+{
+    return $this->video ? asset('storage/' . $this->video) : null;
+}
 }

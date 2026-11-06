@@ -14,7 +14,7 @@
             @endforeach
         </select>
         <p class="mt-1 text-xs text-gray-500">
-            Slide Hero: foto lebar untuk latar paling atas (disarankan landscape, lebar minimal 1600 px).
+            Slide Hero: latar paling atas, bisa berupa gambar atau video (gambar landscape, lebar minimal 1600 px).
             Menu: gambar menu (disarankan potret 3:4). Galeri: foto suasana (disarankan 4:3).
         </p>
         @error('type') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
@@ -43,7 +43,28 @@
         @endif
         <input id="image" type="file" name="image" accept="image/png,image/jpeg,image/webp"
                @if (! $post->exists) required @endif class="mt-2 block w-full text-sm">
+        <p class="mt-1 text-xs text-gray-500">Untuk Slide Hero berisi video, gambar ini menjadi sampul saat video dimuat.</p>
         @error('image') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+    </div>
+
+    {{-- Video (hanya untuk Slide Hero) --}}
+    <div id="video-box">
+        <label for="video" class="block text-sm font-medium">Video Hero (opsional, MP4 atau WebM, maks 30 MB)</label>
+
+        @if ($post->video_url)
+            <video src="{{ $post->video_url }}" controls muted playsinline
+                   style="margin-top:.5rem; max-width:100%; max-height:10rem; border-radius:.5rem;"></video>
+            <label class="mt-2 flex items-center gap-2 text-sm">
+                <input type="checkbox" name="remove_video" value="1" class="rounded border-gray-300">
+                Hapus video ini
+            </label>
+        @endif
+
+        <input id="video" type="file" name="video" accept="video/mp4,video/webm" class="mt-2 block w-full text-sm">
+        <p class="mt-1 text-xs text-gray-500">
+            Diputar otomatis tanpa suara sebagai latar. Disarankan 10 sampai 20 detik, resolusi maksimal 1080p.
+        </p>
+        @error('video') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
     </div>
 
     <div>
@@ -68,3 +89,13 @@
         <a href="{{ route('admin.posts.index') }}" class="rounded-lg border px-5 py-2 text-sm hover:bg-gray-50">Batal</a>
     </div>
 </form>
+
+<script>
+    (function () {
+        const type = document.getElementById('type');
+        const box  = document.getElementById('video-box');
+        const sync = () => { box.hidden = type.value !== 'hero'; };
+        type.addEventListener('change', sync);
+        sync();
+    })();
+</script>

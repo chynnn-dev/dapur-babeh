@@ -32,6 +32,9 @@
                         <span style="padding:.1rem .6rem; border-radius:9999px; font-size:.7rem; font-weight:600; background:#ffedd5; color:#c2410c;">
                             {{ \App\Models\Post::TYPES[$post->type] ?? $post->type }}
                         </span>
+                        @if ($post->video)
+    <span style="padding:.1rem .6rem; border-radius:9999px; font-size:.7rem; font-weight:600; background:#e0f2fe; color:#0369a1;">Video</span>
+@endif  
                         <span style="padding:.1rem .6rem; border-radius:9999px; font-size:.7rem; font-weight:600;
                                      background:{{ $post->is_published ? '#dcfce7' : '#e5e7eb' }}; color:{{ $post->is_published ? '#166534' : '#4b5563' }};">
                             {{ $post->is_published ? 'Tampil' : 'Disembunyikan' }}
