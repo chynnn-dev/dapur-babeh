@@ -5,112 +5,123 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dapur') - Dapur Babeh</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-    --bg: #0f172a;
-    --bar: #0b1222;
-    --panel: #1e293b;
-    --line: #334155;
-    --text: #e2e8f0;
-    --muted: #94a3b8;
-    --accent: #f97316;
-    --blue: #3b82f6;
-    --green: #22c55e;
-    --yellow: #eab308;
-    --red: #ef4444;
-}
+            --green: #0f5f46;
+            --green-d: #0b4a37;
+            --green-l: #14785a;
+            --orange: #f58220;
+            --cream: #f4f1ea;
+            --line: #e6dfd0;
+            --ink: #1f2937;
+            --muted: #6b7280;
+            --red: #dc2626;
+        }
 
-* { box-sizing: border-box; }
-html { font-size: 14px; }
-body { margin: 0; background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, sans-serif; line-height: 1.4; }
-button { font-family: inherit; cursor: pointer; transition: filter .15s, background .15s; }
-button:hover:not(:disabled) { filter: brightness(1.1); }
+        * { box-sizing: border-box; }
+        html { font-size: 14px; }
+        body { margin: 0; background: var(--cream); color: var(--ink); font-family: 'Lato', ui-sans-serif, system-ui, sans-serif; line-height: 1.4; }
+        button { font-family: inherit; cursor: pointer; transition: filter .15s, background .15s; }
+        button:hover:not(:disabled) { filter: brightness(1.06); }
 
-/* Bar atas */
-.topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between;
-          flex-wrap: wrap; gap: .75rem; padding: .6rem 1.25rem; background: var(--bar); border-bottom: 1px solid var(--line); }
-.brand { font-weight: 700; font-size: 1.1rem; }
-.nav { display: flex; gap: .4rem; }
-.nav a { padding: .35rem .9rem; border-radius: 9999px; color: var(--muted); text-decoration: none; font-weight: 600; font-size: .85rem; background: var(--panel); }
-.nav a:hover { color: var(--text); }
-.nav a.active { background: var(--accent); color: #fff; }
-.right { display: flex; align-items: center; gap: .6rem; font-size: .85rem; color: var(--muted); }
-.right button { background: var(--panel); color: var(--text); border: 1px solid var(--line); padding: .35rem .8rem; border-radius: .5rem; font-size: .8rem; }
+        /* Bar atas (terang) */
+        .topbar { position: sticky; top: 0; z-index: 10; background: #fff; border-bottom: 3px solid var(--orange); box-shadow: 0 2px 10px rgba(15,95,70,.1); }
+        .topbar-in { max-width: 96rem; margin: 0 auto; padding: .6rem 1.25rem; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: .75rem; }
 
-.flash { margin: .9rem 1.25rem 0; padding: .6rem .9rem; border-radius: .6rem; background: rgba(34,197,94,.15); color: #86efac; border: 1px solid rgba(34,197,94,.35); font-size: .85rem; }
+        .brand { display: flex; align-items: center; gap: .65rem; text-decoration: none; }
+        .logo { width: 2.3rem; height: 2.3rem; border-radius: .7rem; display: grid; place-items: center; background: var(--green); color: var(--orange); font-weight: 900; font-size: .95rem; letter-spacing: .02em; }
+        .brand-name { font-weight: 900; font-size: 1.15rem; color: var(--green); line-height: 1.1; }
+        .brand-tag { display: inline-block; margin-top: .1rem; padding: .02rem .55rem; border-radius: 99px; background: #fff1de; color: #9a5a00; font-size: .65rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 
-/* Ringkasan */
-.summary { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; padding: .9rem 1.25rem 0; }
-.pill { background: var(--panel); border: 1px solid var(--line); border-radius: 9999px; padding: .25rem .8rem; font-size: .8rem; font-weight: 600; color: var(--muted); }
-.pill b { font-size: 1rem; margin-left: .35rem; color: var(--text); }
-.spacer { flex: 1; }
-.conn { font-size: .75rem; color: var(--green); }
-.conn.off { color: var(--red); }
-.sound { background: var(--panel); color: var(--text); border: 1px solid var(--line); padding: .35rem .8rem; border-radius: .5rem; font-size: .8rem; }
+        .nav { display: flex; gap: .35rem; background: #f0ebe0; padding: .25rem; border-radius: .8rem; }
+        .nav a { padding: .45rem 1.3rem; border-radius: .6rem; color: var(--green); text-decoration: none; font-weight: 800; font-size: .88rem; }
+        .nav a:hover { background: rgba(15,95,70,.08); }
+        .nav a.active { background: var(--green); color: #fff; box-shadow: 0 2px 6px rgba(15,95,70,.3); }
 
-/* Kartu pesanan */
-.orders-grid { display: grid; gap: .9rem; padding: .9rem 1.25rem 2rem; align-items: start;
-               grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
-.empty { grid-column: 1 / -1; text-align: center; color: #64748b; font-size: 1rem; padding: 3rem 0; }
+        .right { display: flex; align-items: center; justify-content: flex-end; gap: .6rem; }
+        .clock { font-weight: 900; font-size: 1.05rem; color: var(--green); padding: .3rem .75rem; border-radius: .6rem; background: #e9f3ee; font-variant-numeric: tabular-nums; }
+        .user { display: flex; align-items: center; gap: .5rem; font-size: .85rem; font-weight: 700; color: var(--ink); }
+        .avatar { width: 2rem; height: 2rem; border-radius: 50%; display: grid; place-items: center; background: var(--orange); color: #fff; font-weight: 800; }
+        .logout { background: #fff; color: #b91c1c; border: 1px solid #f3c1c1; padding: .4rem .9rem; border-radius: .5rem; font-size: .8rem; font-weight: 800; }
+        .logout:hover:not(:disabled) { background: #fde2e2; filter: none; }
 
-.order { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--blue);
-         border-radius: .85rem; padding: .9rem 1rem; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
-.order.cooking { border-left-color: var(--accent); }
-.order.warn { border-left-color: var(--yellow); }
-.order.late { border-left-color: var(--red); border-color: rgba(239,68,68,.5); }
+        .container { max-width: 96rem; margin: 0 auto; padding: 1rem 1.25rem 2rem; }
 
-.where { font-size: 1.2rem; font-weight: 700; letter-spacing: .02em; }
-.meta { color: var(--muted); font-size: .78rem; margin-top: .1rem; }
-.order ul { list-style: none; padding: 0; margin: .75rem 0; font-size: 1rem; }
-.order li { padding: .4rem 0; border-bottom: 1px dashed var(--line); }
-.order li:last-child { border-bottom: 0; }
-.q { display: inline-block; min-width: 2.1rem; font-weight: 700; color: #fbbf24; }
-.note { font-size: .8rem; color: #fda4af; margin: .1rem 0 0 2.1rem; font-style: italic; }
+        .flash { margin: 0 0 1rem; padding: .65rem 1rem; border-radius: .6rem; background: #e3f4ea; color: var(--green-d);
+                 border-left: 4px solid var(--green); font-size: .88rem; font-weight: 700; }
 
-.act { width: 100%; padding: .6rem; border: 0; border-radius: .6rem; font-size: .9rem; font-weight: 700; letter-spacing: .04em; color: #fff; }
-.act.start { background: var(--blue); }
-.act.finish { background: #16a34a; }
-.act:disabled { opacity: .5; cursor: not-allowed; }
+        /* Halaman Stok Menu */
+        .page { padding: 0; }
+        .hint { color: var(--muted); margin: 0 0 .75rem; font-size: .9rem; }
+        .cat-title { display: flex; align-items: center; gap: .6rem; font-size: .85rem; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; margin: 1.4rem 0 .7rem; color: var(--green); }
+        .cat-title::after { content: ""; flex: 1; height: 2px; background: var(--line); border-radius: 2px; }
+        .stock-grid { display: grid; gap: .8rem; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); }
+        .stock-card { background: #fff; border-radius: .85rem; border-left: 5px solid #22a06b; padding: .85rem 1rem;
+                      box-shadow: 0 1px 3px rgba(15,95,70,.08), 0 6px 18px rgba(15,95,70,.05); }
+        .stock-card.out { border-left-color: var(--red); }
+        .sname { font-size: 1.05rem; font-weight: 700; color: #111827; }
+        .sstate { display: inline-block; font-size: .72rem; font-weight: 800; margin: .3rem 0 .7rem; padding: .15rem .65rem; border-radius: 99px; background: #e3f4ea; color: var(--green-d); }
+        .stock-card.out .sstate { background: #fde2e2; color: #991b1b; }
+        .stock-btn { width: 100%; padding: .6rem; border: 0; border-radius: .55rem; font-size: .82rem; font-weight: 900; letter-spacing: .04em; color: #fff; }
+        .stock-btn.mark-out { background: var(--red); }
+        .stock-btn.mark-in { background: var(--green); }
 
-/* Stok Menu */
-.page { padding: .9rem 1.25rem 2rem; }
-.hint { color: var(--muted); margin: 0 0 .75rem; font-size: .9rem; }
-.cat-title { font-size: .85rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin: 1.25rem 0 .6rem; color: var(--accent); }
-.stock-grid { display: grid; gap: .7rem; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); }
-.stock-card { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--green);
-              border-radius: .8rem; padding: .75rem .9rem; }
-.stock-card.out { border-left-color: var(--red); }
-.sname { font-size: 1rem; font-weight: 600; }
-.sstate { font-size: .75rem; margin: .1rem 0 .6rem; color: #86efac; }
-.stock-card.out .sstate { color: #fca5a5; }
-.stock-btn { width: 100%; padding: .5rem; border: 0; border-radius: .5rem; font-size: .8rem; font-weight: 700; color: #fff; }
-.stock-btn.mark-out { background: #dc2626; }
-.stock-btn.mark-in { background: #16a34a; }
+        @media (max-width: 820px) {
+            .topbar-in { grid-template-columns: 1fr auto; }
+            .nav { grid-column: 1 / -1; grid-row: 2; justify-content: center; }
+            .nav a { flex: 1; text-align: center; }
+            .user span { display: none; }
+        }
     </style>
 </head>
 <body>
     <header class="topbar">
-        <div class="brand">Dapur Babeh <span style="font-weight:400;color:#94a3b8">Dapur</span></div>
+        <div class="topbar-in">
+            <a href="{{ route('kitchen.index') }}" class="brand">
+                <div class="logo">DB</div>
+                <div>
+                    <div class="brand-name">Dapur Babeh</div>
+                    <span class="brand-tag">Dapur</span>
+                </div>
+            </a>
 
-        <nav class="nav">
-            <a href="{{ route('kitchen.index') }}" class="{{ request()->routeIs('kitchen.index') ? 'active' : '' }}">Pesanan</a>
-            <a href="{{ route('kitchen.stock') }}" class="{{ request()->routeIs('kitchen.stock') ? 'active' : '' }}">Stok Menu</a>
-        </nav>
+            <nav class="nav">
+                <a href="{{ route('kitchen.index') }}" class="{{ request()->routeIs('kitchen.index') ? 'active' : '' }}">Pesanan</a>
+                <a href="{{ route('kitchen.stock') }}" class="{{ request()->routeIs('kitchen.stock') ? 'active' : '' }}">Stok Menu</a>
+            </nav>
 
-        <div class="right">
-            <span>{{ auth()->user()->name }}</span>
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit">Logout</button>
-            </form>
+            <div class="right">
+                <div class="clock" id="clock">--:--</div>
+                <div class="user">
+                    <div class="avatar">{{ strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}</div>
+                    <span>{{ auth()->user()->name }}</span>
+                </div>
+                <form method="POST" action="{{ route('logout') }}" style="margin:0">
+                    @csrf
+                    <button type="submit" class="logout">Logout</button>
+                </form>
+            </div>
         </div>
     </header>
 
-    @if (session('success'))
-        <div class="flash">{{ session('success') }}</div>
-    @endif
+    <main class="container">
+        @if (session('success'))
+            <div class="flash">{{ session('success') }}</div>
+        @endif
 
-    @yield('content')
+        @yield('content')
+    </main>
+
+    <script>
+        (function () {
+            const el = document.getElementById('clock');
+            const tick = () => { el.textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':'); };
+            tick();
+            setInterval(tick, 10000);
+        })();
+    </script>
 
     @stack('scripts')
 </body>
