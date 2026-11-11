@@ -6,9 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Menu extends Model
 {
-    protected $fillable = ['category_id', 'name', 'price', 'image', 'is_available'];
+    protected $fillable = ['category_id', 'name', 'price', 'image', 'is_available', 'show_on_home'];
 
-    protected $casts = ['is_available' => 'boolean'];
+    protected $casts = [
+        'is_available' => 'boolean',
+        'show_on_home' => 'boolean',
+    ];
 
     public function category()
     {
@@ -21,7 +24,7 @@ class Menu extends Model
     }
 
     public function items()
-{
-    return $this->hasMany(TransactionItem::class);
-}
+    {
+        return $this->hasMany(TransactionItem::class);
+    }
 }

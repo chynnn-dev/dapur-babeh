@@ -14,11 +14,12 @@ class MenuController extends Controller
     private function rules(): array
     {
         return [
-            'category_id' => ['required', 'exists:categories,id'],
-            'name'        => ['required', 'string', 'max:100'],
-            'price'       => ['required', 'integer', 'min:0', 'max:10000000'],
-            'image'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'category_id'  => ['required', 'exists:categories,id'],
+            'name'         => ['required', 'string', 'max:100'],
+            'price'        => ['required', 'integer', 'min:0', 'max:10000000'],
+            'image'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'is_available' => ['nullable', 'boolean'],
+            'show_on_home' => ['nullable', 'boolean'],
         ];
     }
 
@@ -49,6 +50,7 @@ class MenuController extends Controller
     {
         $data = $request->validate($this->rules());
         $data['is_available'] = $request->boolean('is_available');
+        $data['show_on_home'] = $request->boolean('show_on_home');
 
         unset($data['image']);
         if ($request->hasFile('image')) {
@@ -72,6 +74,7 @@ class MenuController extends Controller
     {
         $data = $request->validate($this->rules());
         $data['is_available'] = $request->boolean('is_available');
+        $data['show_on_home'] = $request->boolean('show_on_home');
 
         unset($data['image']);
         if ($request->hasFile('image')) {

@@ -15,7 +15,7 @@
         </select>
         <p class="mt-1 text-xs text-gray-500">
             Slide Hero: latar paling atas, bisa berupa gambar atau video (gambar landscape, lebar minimal 1600 px).
-            Menu: gambar menu (disarankan potret 3:4). Galeri: foto suasana (disarankan 4:3).
+            Galeri: foto suasana restoran (disarankan 4:3). Menu hidangan diatur di menu Admin → Menu.
         </p>
         @error('type') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
     </div>
@@ -24,7 +24,7 @@
         <label for="title" class="block text-sm font-medium">Judul (opsional)</label>
         <input id="title" type="text" name="title" value="{{ old('title', $post->title) }}"
                class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500">
-        <p class="mt-1 text-xs text-gray-500">Tampil sebagai keterangan di Menu dan Galeri. Tidak dipakai untuk Slide Hero.</p>
+        <p class="mt-1 text-xs text-gray-500">Tampil sebagai keterangan di Galeri. Tidak dipakai untuk Slide Hero.</p>
         @error('title') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
     </div>
 
@@ -37,19 +37,20 @@
 
     <div>
         <label for="image" class="block text-sm font-medium">Gambar (maks 4 MB)</label>
-        @if ($post->exists)
+        @if ($post->image_url)
             <img src="{{ $post->image_url }}" alt="" class="mt-2 rounded-lg object-cover" style="width:10rem; height:7rem;">
             <p class="mt-1 text-xs text-gray-500">Pilih file baru hanya jika ingin mengganti gambar.</p>
         @endif
-        <input id="image" type="file" name="image" accept="image/png,image/jpeg,image/webp"
-               @if (! $post->exists) required @endif class="mt-2 block w-full text-sm">
-        <p class="mt-1 text-xs text-gray-500">Untuk Slide Hero berisi video, gambar ini menjadi sampul saat video dimuat.</p>
+        <input id="image" type="file" name="image" accept="image/png,image/jpeg,image/webp" class="mt-2 block w-full text-sm">
+        <p class="mt-1 text-xs text-gray-500">
+            Wajib untuk Galeri. Untuk Slide Hero berisi video, gambar ini opsional dan dipakai sebagai sampul saat video dimuat.
+        </p>
         @error('image') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
     </div>
 
     {{-- Video (hanya untuk Slide Hero) --}}
     <div id="video-box">
-        <label for="video" class="block text-sm font-medium">Video Hero (opsional, MP4 atau WebM, maks 30 MB)</label>
+        <label for="video" class="block text-sm font-medium">Video Hero (opsional, MP4 atau WebM, maks 35 MB)</label>
 
         @if ($post->video_url)
             <video src="{{ $post->video_url }}" controls muted playsinline
@@ -92,10 +93,25 @@
 
 <script>
     (function () {
-        const type = document.getElementById('type');
-        const box  = document.getElementById('video-box');
-        const sync = () => { box.hidden = type.value !== 'hero'; };
+        const type  = document.getElementById('type');
+        const image = document.getElementById('image');
+        const video = document.getElementById('video');
+        const box   = document.getElementById('video-box');
+
+        const hasStoredImage = @json((bool) $post->image);
+        const hasStoredVideo = @json((bool) $post->video);
+
+        // Kolom video hanya untuk Slide Hero; gambar wajib kecuali Slide Hero berisi video
+        const sync = () => {
+            const isHero = type.value === 'hero';
+            box.hidden = !isHero;
+
+            const hasVideo = isHero && (video.files.length > 0 || hasStoredVideo);
+            image.required = !hasStoredImage && !hasVideo;
+        };
+
         type.addEventListener('change', sync);
+        video.addEventListener('change', sync);
         sync();
     })();
 </script>

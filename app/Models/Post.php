@@ -8,11 +8,11 @@ class Post extends Model
 {
     public const TYPES = [
         'hero'    => 'Slide Hero',
-        'menu'    => 'Menu',
         'gallery' => 'Galeri',
     ];
 
-protected $fillable = ['type', 'title', 'caption', 'image', 'video', 'sort_order', 'is_published'];
+    protected $fillable = ['type', 'title', 'caption', 'image', 'video', 'sort_order', 'is_published'];
+
     protected $casts = ['is_published' => 'boolean'];
 
     public function scopePublished($query)
@@ -30,13 +30,13 @@ protected $fillable = ['type', 'title', 'caption', 'image', 'video', 'sort_order
         return $query->orderBy('sort_order')->orderByDesc('id');
     }
 
-    public function getImageUrlAttribute(): string
+    public function getImageUrlAttribute(): ?string
     {
-        return asset('storage/' . $this->image);
+        return $this->image ? asset('storage/' . $this->image) : null;
     }
 
     public function getVideoUrlAttribute(): ?string
-{
-    return $this->video ? asset('storage/' . $this->video) : null;
-}
+    {
+        return $this->video ? asset('storage/' . $this->video) : null;
+    }
 }

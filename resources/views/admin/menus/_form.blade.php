@@ -50,6 +50,15 @@
         </label>
     </div>
 
+    <div>
+        <input type="hidden" name="show_on_home" value="0">
+        <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="show_on_home" value="1" class="rounded border-gray-300"
+                   @checked(old('show_on_home', $menu->exists ? $menu->show_on_home : true))>
+            Tampilkan di halaman depan
+        </label>
+    </div>
+
     <div class="flex gap-2 pt-2">
         <button class="rounded-lg bg-orange-600 px-5 py-2 text-sm font-semibold text-white hover:bg-orange-700">Simpan</button>
         <a href="{{ route('admin.menus.index') }}" class="rounded-lg border px-5 py-2 text-sm hover:bg-gray-50">Batal</a>

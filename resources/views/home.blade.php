@@ -51,8 +51,7 @@
         .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(rgba(6,36,27,.45), rgba(6,36,27,.7)); }
         .hero-inner { position: relative; z-index: 2; max-width: 52rem; padding: 6rem 1.25rem 5rem; }
         .eyebrow { display: inline-block; font-size: .78rem; font-weight: 900; letter-spacing: .22em; text-transform: uppercase; color: var(--orange); }
-        .hero .eyebrow { margin-bottom: 1rem; padding: .3rem .9rem; border: 1px solid rgba(245,130,32,.6); border-radius: 99px; background: rgba(0,0,0,.25); }
-        .hero-title { margin: 0; font-family: var(--serif); font-size: clamp(2.2rem, 6vw, 4.2rem); line-height: 1.12; font-weight: 800; text-shadow: 0 3px 18px rgba(0,0,0,.45); }
+                .hero-title { margin: 0; font-family: var(--serif); font-size: clamp(2.2rem, 6vw, 4.2rem); line-height: 1.12; font-weight: 800; text-shadow: 0 3px 18px rgba(0,0,0,.45); }
         .hero-sub { margin: 1rem auto 2rem; max-width: 36rem; font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 300; color: #eaf5ef; }
         .hero-actions { display: flex; gap: .9rem; justify-content: center; flex-wrap: wrap; }
         .btn { display: inline-block; padding: .85rem 1.9rem; font-weight: 900; font-size: .9rem; text-transform: uppercase; letter-spacing: .06em; border-radius: .6rem; transition: background .2s, color .2s, transform .15s; }
@@ -108,13 +107,95 @@
         .about-solo { max-width: 46rem; margin: 0 auto; text-align: center; }
 
         /* ===== Menu & Galeri ===== */
-        .menu-grid { display: grid; gap: 1.2rem; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); }
-        .menu-card { margin: 0; background: #fff; border-radius: 1rem; overflow: hidden; cursor: zoom-in; box-shadow: 0 6px 20px rgba(15,95,70,.12); transition: transform .3s, box-shadow .3s; }
-        .menu-card:hover { transform: translateY(-6px); box-shadow: 0 14px 30px rgba(15,95,70,.2); }
-        .menu-card .pic { overflow: hidden; background: #e6dfd0; }
-        .menu-card img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; display: block; transition: transform .5s; }
-        .menu-card:hover img { transform: scale(1.06); }
-        .menu-card figcaption { padding: .9rem 1rem; text-align: center; font-weight: 900; color: var(--green); border-top: 3px solid var(--orange); }
+        /* Menu */
+        .chips { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; margin-bottom: 2rem; }
+        .chip { padding: .4rem 1.2rem; border: 2px solid var(--green); border-radius: 99px; background: transparent; color: var(--green); font: inherit; font-weight: 900; font-size: .85rem; cursor: pointer; transition: background .2s, color .2s; }
+        .chip:hover, .chip.active { background: var(--green); color: #fff; }
+        .dishes { display: grid; gap: 1.1rem; grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr)); }
+        .dish { position: relative; isolation: isolate; aspect-ratio: 3 / 4; border-radius: 1.1rem; overflow: hidden;
+                background: linear-gradient(160deg, var(--green-l), var(--green-d)); box-shadow: 0 8px 24px rgba(15,95,70,.18); transition: transform .35s, box-shadow .35s; }
+        .dish[hidden] { display: none; }
+        .dish[data-zoom] { cursor: zoom-in; }
+        .dish:hover { transform: translateY(-6px); box-shadow: 0 18px 40px rgba(15,95,70,.32); }
+        .dish img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .6s; }
+        .dish:hover img { transform: scale(1.08); }
+        .dish::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+                       background: linear-gradient(to top, rgba(6,36,27,.92) 0%, rgba(6,36,27,.55) 38%, rgba(6,36,27,0) 66%); }
+        .dish-initial { position: absolute; inset: 0; display: grid; place-items: center; padding-bottom: 3rem; font-family: var(--serif); font-size: 6rem; font-weight: 800; color: rgba(245,130,32,.9); }
+        .dish-info { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; display: flex; flex-direction: column; gap: .25rem; padding: 1rem 1.1rem 1.1rem; color: #fff; }
+        .dish-cat { font-size: .66rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; color: var(--orange); }
+        .dish-info h3 { margin: 0; font-size: 1.15rem; font-weight: 900; line-height: 1.25; text-shadow: 0 1px 6px rgba(0,0,0,.5); }
+        .dish-price { align-self: flex-start; margin-top: .35rem; padding: .2rem .85rem; border-radius: 99px; background: var(--orange); color: #fff; font-weight: 900; font-size: .9rem; }
+        .dish.sold img { filter: grayscale(1); opacity: .6; }
+        .dish.sold .dish-price { background: #6b7280; }
+        .badge-sold { position: absolute; top: .8rem; left: .8rem; z-index: 3; padding: .2rem .8rem; border-radius: 99px; background: #b91c1c; color: #fff; font-style: normal; font-weight: 900; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; }
+        .menu-cta { display: flex; flex-wrap: wrap; gap: .8rem; justify-content: center; align-items: center; margin-top: 2.2rem; }
+        .menu-cta[hidden] { display: none; }
+        @media (max-width: 600px) {
+            .dishes { grid-template-columns: repeat(2, 1fr); gap: .8rem; }
+            .dish-info { padding: .7rem .8rem .8rem; }
+            .dish-info h3 { font-size: .95rem; }
+            .dish-price { font-size: .8rem; padding: .15rem .65rem; }
+            .dish-initial { font-size: 4rem; }
+        }
+
+        /* Jendela buku menu */
+        .bk-modal { position: fixed; inset: 0; z-index: 90; display: none; padding: 1.2rem; background: rgba(6,36,27,.8); overflow-y: auto; }
+        .bk-modal.show { display: flex; }
+        .bk-modal .book-wrap { margin: auto; width: 100%; }
+        .bk-top { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: .8rem; color: #fff; }
+        .bk-top h3 { margin: 0; font-family: var(--serif); font-size: 1.4rem; }
+        .bk-close { width: 2.4rem; height: 2.4rem; border: 0; border-radius: 50%; background: rgba(255,255,255,.18); color: #fff; font-size: 1.6rem; line-height: 1; cursor: pointer; }
+        .bk-close:hover { background: var(--orange); }
+        .bk-modal .btab { background: rgba(255,255,255,.16); }
+        .bk-modal .btab:hover { background: rgba(255,255,255,.3); }
+        .bk-modal .btab.active { background: #fbf6ea; }
+
+        /* ===== Menu bergaya buku ===== */
+        .book-wrap { max-width: 62rem; margin: 0 auto; }
+        .book-tabs { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: .3rem; padding: 0 1.4rem; }
+        .btab { padding: .55rem 1.2rem .6rem; border: 0; border-radius: .7rem .7rem 0 0; background: var(--green); color: #d6ebe2; font: inherit; font-weight: 900; font-size: .85rem; cursor: pointer; transition: background .2s, color .2s; }
+        .btab:hover { background: var(--green-l); color: #fff; }
+        .btab.active { background: #fbf6ea; color: var(--green); padding-bottom: .8rem; margin-bottom: -.25rem; box-shadow: 0 -4px 10px rgba(15,95,70,.1); }
+
+        .book { position: relative; padding: 2.4rem 2.6rem 1.6rem; background-color: #fbf6ea; border-radius: .6rem 1rem 1rem 1rem;
+                background-image: linear-gradient(90deg, rgba(15,95,70,.05), transparent 6%, transparent 94%, rgba(15,95,70,.05));
+                box-shadow: 0 24px 50px rgba(15,95,70,.22), inset 0 0 0 1px rgba(15,95,70,.12); }
+        .book::before { content: ""; position: absolute; inset: .8rem; border: 2px solid rgba(245,130,32,.5); border-radius: .5rem; pointer-events: none; }
+        .book-title { display: flex; align-items: center; justify-content: center; gap: .9rem; font-family: var(--serif); font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 800; color: var(--green); text-align: center; }
+        .book-title i { font-style: normal; font-size: .9rem; color: var(--orange); }
+        .book-sub { text-align: center; font-size: .72rem; font-weight: 900; letter-spacing: .3em; text-transform: uppercase; color: var(--muted); margin: .2rem 0 1.6rem; }
+
+        .book-pages { column-count: 2; column-gap: 4.5rem; column-rule: 2px dashed rgba(15,95,70,.2); }
+        .mrow { break-inside: avoid; display: flex; align-items: center; gap: .9rem; padding: .7rem 0; border-bottom: 1px solid rgba(15,95,70,.08); }
+        .mrow[hidden] { display: none; }
+        .mthumb { width: 3.2rem; height: 3.2rem; flex-shrink: 0; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--beige); border: 2px solid rgba(245,130,32,.45);
+                  font-family: var(--serif); font-weight: 800; font-size: 1.3rem; color: var(--orange); box-shadow: 0 3px 8px rgba(15,95,70,.15); }
+        .mthumb[data-zoom] { cursor: zoom-in; }
+        .mthumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .mbody { flex: 1; min-width: 0; }
+        .mline { display: flex; align-items: flex-end; gap: .5rem; }
+        .mname { font-family: var(--serif); font-weight: 700; font-size: 1.08rem; line-height: 1.3; color: var(--ink); }
+        .mdots { flex: 1; min-width: .8rem; margin-bottom: .4rem; border-bottom: 2px dotted rgba(15,95,70,.35); }
+        .mprice { font-family: var(--serif); font-weight: 800; color: var(--orange); white-space: nowrap; }
+        .mcat { display: block; font-size: .66rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+        .book.by-cat .mcat { display: none; }
+        .mrow.sold .mname { text-decoration: line-through; opacity: .5; }
+        .mrow.sold .mprice { font-family: 'Lato', sans-serif; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: #b91c1c; }
+        .mrow.sold .mthumb img { filter: grayscale(1); opacity: .6; }
+        .book-empty { text-align: center; color: var(--muted); padding: 1.5rem 0; }
+
+        .book-pager { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.4rem; font-family: var(--serif); font-weight: 700; color: var(--green); }
+        .book-pager[hidden] { display: none; }
+        .bk-btn { width: 2.3rem; height: 2.3rem; border-radius: 50%; border: 2px solid var(--green); background: transparent; color: var(--green); font-size: 1rem; cursor: pointer; transition: background .2s, color .2s; }
+        .bk-btn:hover:not(:disabled) { background: var(--green); color: #fff; }
+        .bk-btn:disabled { opacity: .3; cursor: default; }
+        @media (max-width: 760px) {
+            .book { padding: 1.8rem 1.2rem 1.2rem; }
+            .book::before { inset: .5rem; }
+            .book-pages { column-count: 1; }
+            .btab { padding: .45rem .9rem .5rem; font-size: .78rem; }
+        }
 
         .masonry { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); }
         .masonry figure { margin: 0; position: relative; overflow: hidden; border-radius: .9rem; cursor: zoom-in; background: #e6dfd0; aspect-ratio: 4 / 3; box-shadow: 0 4px 14px rgba(15,95,70,.12); }
@@ -186,6 +267,28 @@
         .wa-float { position: fixed; right: 1.2rem; bottom: 1.2rem; z-index: 40; width: 3.4rem; height: 3.4rem; border-radius: 50%; display: grid; place-items: center; background: #25a35a; color: #fff; box-shadow: 0 8px 22px rgba(0,0,0,.3); transition: transform .2s; }
         .wa-float:hover { transform: scale(1.08); }
 
+        .more-wrap { text-align: center; margin-top: 2.2rem; }
+        /* Form ulasan memanjang sama dengan daftar ulasan */
+        #ulasan .two-col { align-items: stretch; }
+        #ulasan .two-col > .card { display: flex; flex-direction: column; }
+        #ulasan .two-col > .card form { flex: 1; grid-template-rows: auto auto 1fr auto; }
+        .rsv-form .grow { grid-template-rows: auto 1fr; }
+        .rsv-form .grow textarea { height: 100%; min-height: 6rem; resize: none; }
+
+        .btn-more { padding: .8rem 2rem; border: 2px solid var(--green); background: transparent; color: var(--green); border-radius: .6rem; font: inherit; font-weight: 900; font-size: .9rem; cursor: pointer; transition: background .2s, color .2s; }
+        .btn-more:hover { background: var(--green); color: #fff; }
+
+        /* Jendela semua ulasan */
+        .rv-modal { position: fixed; inset: 0; z-index: 90; display: none; align-items: center; justify-content: center; padding: 1rem; background: rgba(0,0,0,.6); }
+        .rv-modal.show { display: flex; }
+        .rv-box { width: 100%; max-width: 38rem; max-height: 86vh; display: flex; flex-direction: column; background: var(--cream); border-radius: 1.1rem; box-shadow: 0 24px 60px rgba(0,0,0,.4); overflow: hidden; }
+        .rv-box-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 1.3rem; background: #fff; border-bottom: 3px solid var(--orange); }
+        .rv-box-head h3 { margin: 0; font-family: var(--serif); font-size: 1.3rem; color: var(--green); }
+        .rv-box-head small { color: var(--muted); font-weight: 700; }
+        .rv-close { width: 2.3rem; height: 2.3rem; border: 0; border-radius: 50%; background: #f0ebe0; color: var(--green); font-size: 1.5rem; line-height: 1; cursor: pointer; }
+        .rv-close:hover { background: var(--orange); color: #fff; }
+        .rv-box-body { overflow-y: auto; padding: 1.1rem 1.3rem 1.4rem; display: grid; gap: 1rem; align-content: start; }
+
         /* Pembesar gambar */
         .lightbox { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; padding: 1.5rem; background: rgba(0,0,0,.9); cursor: zoom-out; }
         .lightbox.show { display: flex; }
@@ -221,7 +324,8 @@
 @php
     $waNumber    = \App\Models\SiteContent::whatsappNumber($c);
     $mapEmbed    = \App\Models\SiteContent::mapEmbedUrl($c);
-    $reviews     = \App\Models\Review::approved()->latest()->take(12)->get();
+    $reviews     = \App\Models\Review::approved()->latest()->take(50)->get();
+    $previewReviews = $reviews->take(3);
     $reviewCount = \App\Models\Review::approved()->count();
     $reviewAvg   = $reviewCount ? round(\App\Models\Review::approved()->avg('rating'), 1) : 0;
     $aboutImg    = optional($galleries->first())->image_url ?? optional($slides->first())->image_url;
@@ -254,10 +358,12 @@
 
 {{-- Hero --}}
 <section id="home" class="hero">
+    {{-- Latar dan sampul hanya dipasang kalau gambarnya ada (Slide Hero boleh hanya video) --}}
     @foreach ($slides as $slide)
-        <div class="slide {{ $loop->first ? 'active' : '' }}" style="background-image:url('{{ $slide->image_url }}')">
+        <div class="slide {{ $loop->first ? 'active' : '' }}"
+             @if ($slide->image_url) style="background-image:url('{{ $slide->image_url }}')" @endif>
             @if ($slide->video_url)
-                <video muted playsinline preload="metadata" poster="{{ $slide->image_url }}">
+                <video muted playsinline preload="metadata" @if ($slide->image_url) poster="{{ $slide->image_url }}" @endif>
                     <source src="{{ $slide->video_url }}" type="{{ str_ends_with($slide->video, '.webm') ? 'video/webm' : 'video/mp4' }}">
                 </video>
             @endif
@@ -271,7 +377,6 @@
     @endif
 
     <div class="hero-inner">
-        <span class="eyebrow">{{ $c['site_name'] }}</span>
         <h1 class="hero-title">{{ $c['hero_title'] }}</h1>
         @if ($c['hero_subtitle'])
             <p class="hero-sub">{{ $c['hero_subtitle'] }}</p>
@@ -325,6 +430,7 @@
 </section>
 
 {{-- Menu --}}
+{{-- Menu dibaca dari data Menu kasir (cukup diinput sekali di Admin → Menu) --}}
 <section id="menu" class="section">
     <div class="container">
         <div class="sec-head reveal">
@@ -333,18 +439,44 @@
             <div class="rule"></div>
         </div>
 
-        @if ($menus->isNotEmpty())
-            <div class="menu-grid">
-                @foreach ($menus as $item)
-                    <figure class="menu-card reveal" data-zoom="{{ $item->image_url }}">
-                        <div class="pic"><img src="{{ $item->image_url }}" alt="{{ $item->title ?: 'Menu' }}" loading="lazy"></div>
-                        @if ($item->title)
-                            <figcaption>{{ $item->title }}</figcaption>
-                        @endif
-                    </figure>
+        @if ($menuItems->isNotEmpty())
+            <div class="chips reveal">
+                <button type="button" class="chip active" data-cat="all">Semua</button>
+                @foreach ($menuCategories as $cat)
+                    <button type="button" class="chip" data-cat="{{ $cat->id }}">{{ $cat->name }}</button>
                 @endforeach
             </div>
-        @else
+
+            <div class="dishes reveal">
+                @foreach ($menuItems as $item)
+                    <article class="dish {{ $item->is_available ? '' : 'sold' }}" data-cat="{{ $item->category_id }}"
+                             @if ($item->image_url) data-zoom="{{ $item->image_url }}" @endif
+                             @if ($loop->index >= 8) hidden @endif>
+                        @if ($item->image_url)
+                            <img src="{{ $item->image_url }}" alt="{{ $item->name }}" loading="lazy">
+                        @else
+                            <span class="dish-initial">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($item->name, 0, 1)) }}</span>
+                        @endif
+
+                        @unless ($item->is_available)
+                            <em class="badge-sold">Habis</em>
+                        @endunless
+
+                        <div class="dish-info">
+                            <span class="dish-cat">{{ $item->category->name }}</span>
+                            <h3>{{ $item->name }}</h3>
+                            <span class="dish-price">Rp {{ number_format($item->price, 0, ',', '.') }}</span>
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+
+            @if ($menuItems->count() > 4)
+                <div class="menu-cta" id="menu-more">
+                    <button type="button" id="all-menu-btn" class="btn-more">Lihat semua menu ({{ $menuItems->count() }})</button>
+                </div>
+            @endif
+                @else
             <p class="empty">Menu akan segera hadir.</p>
         @endif
     </div>
@@ -545,7 +677,7 @@
                         </div>
                     </div>
 
-                    <label class="full">Ulasan
+                    <label class="full grow">Ulasan
                         <textarea name="comment" rows="4" required minlength="5" maxlength="500" placeholder="Ceritakan pengalaman Anda">{{ old('comment') }}</textarea>
                     </label>
 
@@ -554,7 +686,7 @@
             </div>
 
             <div class="review-list">
-                @forelse ($reviews as $r)
+                @forelse ($previewReviews as $r)
                     <div class="review reveal">
                         <div class="review-head">
                             <div class="avatar">{{ strtoupper(mb_substr($r->name, 0, 1)) }}</div>
@@ -571,6 +703,12 @@
                 @endforelse
             </div>
         </div>
+
+        @if ($reviewCount > $previewReviews->count())
+            <div class="more-wrap">
+                <button type="button" id="all-reviews-btn" class="btn-more">Lihat semua ulasan ({{ $reviewCount }})</button>
+            </div>
+        @endif
     </div>
 </section>
 
@@ -606,6 +744,88 @@
     <a href="{{ $waUrl }}" target="_blank" rel="noopener" class="wa-float" aria-label="Chat WhatsApp">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 20z"/></svg>
     </a>
+@endif
+
+@if ($reviewCount > $previewReviews->count())
+    <div id="reviews-modal" class="rv-modal" role="dialog" aria-modal="true" aria-label="Semua ulasan">
+        <div class="rv-box">
+            <div class="rv-box-head">
+                <div>
+                    <h3>Semua Ulasan</h3>
+                    <small>{{ $reviewAvg }} / 5 &middot; {{ $reviewCount }} ulasan</small>
+                </div>
+                <button type="button" class="rv-close" data-close aria-label="Tutup">&times;</button>
+            </div>
+            <div class="rv-box-body">
+                @foreach ($reviews as $r)
+                    <div class="review">
+                        <div class="review-head">
+                            <div class="avatar">{{ strtoupper(mb_substr($r->name, 0, 1)) }}</div>
+                            <div>
+                                <div class="review-name">{{ $r->name }}</div>
+                                <div class="review-stars">@for ($i = 1; $i <= 5; $i++){{ $i <= $r->rating ? '★' : '☆' }}@endfor</div>
+                            </div>
+                        </div>
+                        <p>{{ $r->comment }}</p>
+                        <small>{{ $r->created_at->format('d/m/Y') }}</small>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+@endif
+
+@if ($menuItems->count() > 4)
+    <div id="menu-modal" class="bk-modal" role="dialog" aria-modal="true" aria-label="Menu selengkapnya">
+        <div class="book-wrap">
+            <div class="bk-top">
+                <h3>Menu Selengkapnya</h3>
+                <button type="button" class="bk-close" data-close aria-label="Tutup">&times;</button>
+            </div>
+
+            <div class="book-tabs">
+                <button type="button" class="btab active" data-cat="all" data-title="Semua Menu">Semua</button>
+                @foreach ($menuCategories as $cat)
+                    <button type="button" class="btab" data-cat="{{ $cat->id }}" data-title="{{ $cat->name }}">{{ $cat->name }}</button>
+                @endforeach
+            </div>
+
+            <div class="book">
+                <div class="book-title"><i>&#10022;</i><span id="book-title">Semua Menu</span><i>&#10022;</i></div>
+                <div class="book-sub">{{ $c['site_name'] }}</div>
+
+                <div class="book-pages">
+                    @foreach ($menuItems as $item)
+                        <div class="mrow {{ $item->is_available ? '' : 'sold' }}" data-cat="{{ $item->category_id }}" @if ($loop->index >= 10) hidden @endif>
+                            <div class="mthumb" @if ($item->image_url) data-zoom="{{ $item->image_url }}" @endif>
+                                @if ($item->image_url)
+                                    <img src="{{ $item->image_url }}" alt="{{ $item->name }}" loading="lazy">
+                                @else
+                                    {{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($item->name, 0, 1)) }}
+                                @endif
+                            </div>
+                            <div class="mbody">
+                                <div class="mline">
+                                    <span class="mname">{{ $item->name }}</span>
+                                    <span class="mdots"></span>
+                                    <span class="mprice">{{ $item->is_available ? 'Rp ' . number_format($item->price, 0, ',', '.') : 'Habis' }}</span>
+                                </div>
+                                <small class="mcat">{{ $item->category->name }}</small>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <p class="book-empty" id="book-empty" hidden>Belum ada menu di kategori ini.</p>
+
+                <div class="book-pager" id="book-pager" @if ($menuItems->count() <= 10) hidden @endif>
+                    <button type="button" id="bk-prev" class="bk-btn" aria-label="Halaman sebelumnya">&#10094;</button>
+                    <span id="bk-info">Halaman 1</span>
+                    <button type="button" id="bk-next" class="bk-btn" aria-label="Halaman berikutnya">&#10095;</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endif
 
 <div id="lightbox" class="lightbox"><img src="" alt=""></div>
@@ -703,6 +923,92 @@
     }, { threshold: 0.12 });
     document.querySelectorAll('.reveal').forEach((el) => revealer.observe(el));
 
+    // Menu: filter kategori + batasi tampilan (sisanya lewat tombol "Lihat semua menu")
+    const dishes = [...document.querySelectorAll('.dish')];
+    const chips = [...document.querySelectorAll('.chips .chip')];
+    const menuMore = document.getElementById('menu-more');
+    let menuCat = 'all';
+    const menuLimit = () => (window.innerWidth < 600 ? 6 : 8);
+
+    function applyMenu() {
+        const limit = menuLimit();
+        let shown = 0;
+        dishes.forEach((d) => {
+            const match = menuCat === 'all' || d.dataset.cat === menuCat;
+            const show = match && shown < limit;
+            if (show) shown++;
+            d.hidden = !show;
+        });
+        if (menuMore) menuMore.hidden = dishes.length <= limit;
+    }
+
+    chips.forEach((chip) => chip.addEventListener('click', () => {
+        menuCat = chip.dataset.cat;
+        chips.forEach((c) => c.classList.toggle('active', c === chip));
+        applyMenu();
+    }));
+    window.addEventListener('resize', applyMenu);
+    if (dishes.length) applyMenu();
+
+    // Menu bergaya buku: tab kategori + halaman
+    const bookRows = [...document.querySelectorAll('.mrow')];
+    if (bookRows.length) {
+        const tabs = [...document.querySelectorAll('.btab')];
+        const book = document.querySelector('.book');
+        const titleEl = document.getElementById('book-title');
+        const infoEl = document.getElementById('bk-info');
+        const prevBtn = document.getElementById('bk-prev');
+        const nextBtn = document.getElementById('bk-next');
+        const pager = document.getElementById('book-pager');
+        const emptyEl = document.getElementById('book-empty');
+        let cat = 'all';
+        let page = 1;
+        const perPage = () => (window.innerWidth < 760 ? 6 : 10);
+
+        function renderBook() {
+            const per = perPage();
+            const matched = bookRows.filter((r) => cat === 'all' || r.dataset.cat === cat);
+            const pages = Math.max(1, Math.ceil(matched.length / per));
+            page = Math.min(Math.max(page, 1), pages);
+
+            bookRows.forEach((r) => { r.hidden = true; });
+            matched.slice((page - 1) * per, page * per).forEach((r) => { r.hidden = false; });
+
+            book.classList.toggle('by-cat', cat !== 'all');
+            emptyEl.hidden = matched.length > 0;
+            pager.hidden = pages <= 1;
+            infoEl.textContent = 'Halaman ' + page + ' dari ' + pages;
+            prevBtn.disabled = page <= 1;
+            nextBtn.disabled = page >= pages;
+        }
+
+        tabs.forEach((tab) => tab.addEventListener('click', () => {
+            cat = tab.dataset.cat;
+            page = 1;
+            titleEl.textContent = tab.dataset.title;
+            tabs.forEach((t) => t.classList.toggle('active', t === tab));
+            renderBook();
+        }));
+        prevBtn.addEventListener('click', () => { page--; renderBook(); });
+        nextBtn.addEventListener('click', () => { page++; renderBook(); });
+
+        let lastW = window.innerWidth;
+        window.addEventListener('resize', () => {
+            if (window.innerWidth !== lastW) { lastW = window.innerWidth; renderBook(); }
+        });
+        renderBook();
+    }
+
+    // Buku menu (jendela "Lihat semua menu")
+    const bkModal = document.getElementById('menu-modal');
+    if (bkModal) {
+        const openBk = () => { bkModal.classList.add('show'); document.body.style.overflow = 'hidden'; };
+        const closeBk = () => { bkModal.classList.remove('show'); document.body.style.overflow = ''; };
+        document.getElementById('all-menu-btn')?.addEventListener('click', openBk);
+        bkModal.addEventListener('click', (e) => { if (e.target === bkModal || e.target.closest('[data-close]')) closeBk(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeBk(); });
+    }
+
     // Pembesar gambar
     const box = document.getElementById('lightbox');
     const boxImg = box.querySelector('img');
@@ -715,6 +1021,16 @@
     @if (session('review_ok') || $errors->any())
     document.getElementById('ulasan').scrollIntoView();
     @endif
+
+    // Jendela semua ulasan
+    const rvModal = document.getElementById('reviews-modal');
+    if (rvModal) {
+        const openRv = () => { rvModal.classList.add('show'); document.body.style.overflow = 'hidden'; };
+        const closeRv = () => { rvModal.classList.remove('show'); document.body.style.overflow = ''; };
+        document.getElementById('all-reviews-btn')?.addEventListener('click', openRv);
+        rvModal.addEventListener('click', (e) => { if (e.target === rvModal || e.target.closest('[data-close]')) closeRv(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeRv(); });
+    }
 
     // Form reservasi -> WhatsApp
     const form = document.getElementById('rsv-form');

@@ -7,17 +7,22 @@ use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class PostController extends Controller
 {
-    private function rules(bool $imageRequired): array
+    private function rules(Request $request, bool $creating): array
     {
+        // Gambar wajib saat membuat, kecuali Slide Hero yang berisi video
+        $imageRequired = $creating
+            && ! ($request->input('type') === 'hero' && $request->hasFile('video'));
+
         return [
             'type'         => ['required', Rule::in(array_keys(Post::TYPES))],
             'title'        => ['nullable', 'string', 'max:100'],
             'caption'      => ['nullable', 'string', 'max:500'],
             'image'        => [$imageRequired ? 'required' : 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
-            'video'        => ['nullable', 'file', 'mimes:mp4,webm', 'max:30720'],
+            'video'        => ['nullable', 'file', 'mimes:mp4,webm', 'max:35840'],
             'remove_video' => ['nullable', 'boolean'],
             'sort_order'   => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_published' => ['nullable', 'boolean'],
@@ -46,12 +51,15 @@ class PostController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate($this->rules(true), $this->messages());
+        $data = $request->validate($this->rules($request, true), $this->messages());
         $data['is_published'] = $request->boolean('is_published');
         $data['sort_order']   = $data['sort_order'] ?? 0;
-        $data['image']        = $request->file('image')->store('posts', 'public');
 
-        unset($data['video'], $data['remove_video']);
+        unset($data['image'], $data['video'], $data['remove_video']);
+
+        $data['image'] = $request->hasFile('image')
+            ? $request->file('image')->store('posts', 'public')
+            : null;
 
         // Video hanya berlaku untuk Slide Hero
         if ($data['type'] === 'hero' && $request->hasFile('video')) {
@@ -71,14 +79,27 @@ class PostController extends Controller
 
     public function update(Request $request, Post $post)
     {
-        $data = $request->validate($this->rules(false), $this->messages());
+        $data = $request->validate($this->rules($request, false), $this->messages());
         $data['is_published'] = $request->boolean('is_published');
         $data['sort_order']   = $data['sort_order'] ?? 0;
+
+        // Postingan harus tetap punya isi: gambar, atau (khusus Slide Hero) video
+        $hasImage = $post->image || $request->hasFile('image');
+        $hasVideo = $data['type'] === 'hero'
+            && ($request->hasFile('video') || ($post->video && ! $request->boolean('remove_video')));
+
+        if (! $hasImage && ! $hasVideo) {
+            throw ValidationException::withMessages([
+                'image' => 'Gambar wajib diisi (Slide Hero boleh hanya berisi video).',
+            ]);
+        }
 
         unset($data['image'], $data['video'], $data['remove_video']);
 
         if ($request->hasFile('image')) {
-            Storage::disk('public')->delete($post->image);
+            if ($post->image) {
+                Storage::disk('public')->delete($post->image);
+            }
             $data['image'] = $request->file('image')->store('posts', 'public');
         }
 
@@ -100,7 +121,9 @@ class PostController extends Controller
 
     public function destroy(Post $post)
     {
-        Storage::disk('public')->delete($post->image);
+        if ($post->image) {
+            Storage::disk('public')->delete($post->image);
+        }
 
         if ($post->video) {
             Storage::disk('public')->delete($post->video);
@@ -114,9 +137,10 @@ class PostController extends Controller
     private function messages(): array
     {
         return [
-            'video.mimes' => 'Video harus berformat MP4 atau WebM.',
-            'video.max'   => 'Ukuran video maksimal 30 MB.',
-            'image.max'   => 'Ukuran gambar maksimal 4 MB.',
+            'image.required' => 'Gambar wajib diisi (Slide Hero boleh hanya berisi video).',
+            'image.max'      => 'Ukuran gambar maksimal 4 MB.',
+            'video.mimes'    => 'Video harus berformat MP4 atau WebM.',
+            'video.max'      => 'Ukuran video maksimal 35 MB.',
         ];
     }
 }
