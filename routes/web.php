@@ -9,11 +9,14 @@ use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\TableController;
 use App\Http\Controllers\Cashier\CashierController;
+use App\Http\Controllers\Cashier\MidtransController;
 use App\Http\Controllers\Kitchen\KitchenController;
 use App\Http\Controllers\Kitchen\StockController;
+use App\Http\Controllers\Waiter\WaiterController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Admin\FrontPageController;
 use App\Http\Controllers\Admin\PostController;
+use App\Http\Controllers\MidtransNotificationController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 
@@ -41,31 +44,32 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('tables', TableController::class)->except(['create', 'show']);
 
     Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
-Route::patch('settings/table-management', [SettingController::class, 'toggleTableManagement'])->name('settings.table-management');
-Route::patch('settings/payment/{method}', [SettingController::class, 'togglePayment'])->where('method', 'qris|debit')->name('settings.payment');
-Route::post('settings/qris', [SettingController::class, 'uploadQris'])->name('settings.qris.upload');
-Route::delete('settings/qris', [SettingController::class, 'removeQris'])->name('settings.qris.remove');
-Route::get('front-page', [FrontPageController::class, 'edit'])->name('front.edit');
-Route::put('front-page', [FrontPageController::class, 'update'])->name('front.update');
+    Route::patch('settings/table-management', [SettingController::class, 'toggleTableManagement'])->name('settings.table-management');
+    Route::patch('settings/payment/{method}', [SettingController::class, 'togglePayment'])->where('method', 'qris|debit')->name('settings.payment');
+    Route::post('settings/qris', [SettingController::class, 'uploadQris'])->name('settings.qris.upload');
+    Route::delete('settings/qris', [SettingController::class, 'removeQris'])->name('settings.qris.remove');
+    Route::get('front-page', [FrontPageController::class, 'edit'])->name('front.edit');
+    Route::put('front-page', [FrontPageController::class, 'update'])->name('front.update');
 
-Route::resource('posts', PostController::class)->except('show');
-Route::get('/ulasan', [AdminReviewController::class, 'index'])->name('reviews.index');
+    Route::resource('posts', PostController::class)->except('show');
+    Route::get('/ulasan', [AdminReviewController::class, 'index'])->name('reviews.index');
     Route::patch('/ulasan/{review}', [AdminReviewController::class, 'toggle'])->name('reviews.toggle');
     Route::delete('/ulasan/{review}', [AdminReviewController::class, 'destroy'])->name('reviews.destroy');
 });
-    // TAMBAHKAN ROUTE REPORTS DI SINI
-    // Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
-    // Jika Anda butuh resource lengkap untuk reports, bisa ganti baris atas dengan:
-    // Route::resource('reports', ReportController::class)->only(['index', 'show']);
-
 
 // Role Cashier
 Route::middleware(['auth', 'role:cashier'])->prefix('cashier')->name('cashier.')->group(function () {
     Route::get('/pos', [CashierController::class, 'index'])->name('pos');
+    Route::get('/history', [CashierController::class, 'history'])->name('history');
     Route::post('/transactions', [CashierController::class, 'store'])->name('store');
     Route::get('/transactions/{transaction}/receipt', [CashierController::class, 'receipt'])->name('receipt');
     Route::get('/tables', [CashierController::class, 'tables'])->name('tables');
     Route::patch('/tables/{table}/reservation', [CashierController::class, 'toggleReservation'])->name('tables.reservation');
+
+    // Pembayaran Midtrans
+    Route::post('/midtrans/payments', [MidtransController::class, 'create'])->name('midtrans.create');
+    Route::get('/midtrans/payments/{orderId}/status', [MidtransController::class, 'status'])->name('midtrans.status');
+    Route::post('/midtrans/payments/{orderId}/cancel', [MidtransController::class, 'cancel'])->name('midtrans.cancel');
 });
 
 // Role Kitchen
@@ -78,7 +82,18 @@ Route::middleware(['auth', 'role:kitchen'])->prefix('kitchen')->name('kitchen.')
     Route::patch('/stock/{menu}', [StockController::class, 'toggle'])->name('stock.toggle');
 });
 
-//review
+// Role Waiter (Pelayan)
+Route::middleware(['auth', 'role:waiter'])->prefix('waiter')->name('waiter.')->group(function () {
+    Route::get('/', [WaiterController::class, 'index'])->name('index');
+    Route::get('/data', [WaiterController::class, 'data'])->name('data');
+    Route::patch('/orders/{transaction}/serve', [WaiterController::class, 'serve'])->name('serve');
+    Route::patch('/tables/{table}/clear', [WaiterController::class, 'clearTable'])->name('tables.clear');
+});
+
+// Notifikasi pembayaran dari Midtrans (publik; CSRF dikecualikan di bootstrap/app.php)
+Route::post('/midtrans/notification', MidtransNotificationController::class)->name('midtrans.notification');
+
+// Ulasan pelanggan
 Route::post('/ulasan', [ReviewController::class, 'store'])
     ->middleware('throttle:3,10')
     ->name('reviews.store');

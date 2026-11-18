@@ -77,7 +77,7 @@ button { cursor: pointer; transition: background .15s, border-color .15s, color 
 .tbl { height: 2.4rem; border-radius: .55rem; border: 1px solid transparent; font-weight: 700; font-size: .85rem; }
 .tbl.available { background: #dcfce7; border-color: #86efac; color: #166534; }
 .tbl.reserved { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
-.tbl.occupied { background: #ef4444; color: #fff; cursor: not-allowed; }
+.tbl.occupied { background: #ef4444; color: #fff; cursor: pointer;}
 .tbl.selected { background: #0ea5e9; color: #fff; border-color: #0284c7; }
 
 /* Daftar pesanan */

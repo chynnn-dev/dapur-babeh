@@ -7,10 +7,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 class User extends Authenticatable
 {
     public const ROLES = [
-    'admin'   => 'Admin / Owner',
-    'cashier' => 'Kasir',
-    'kitchen' => 'Dapur',
-];
+        'admin'   => 'Admin / Owner',
+        'cashier' => 'Kasir',
+        'kitchen' => 'Dapur',
+        'waiter'  => 'Pelayan',
+    ];
+
     protected $fillable = ['name', 'username', 'password', 'role'];
 
     protected $hidden = ['password', 'remember_token'];
@@ -31,11 +33,12 @@ class User extends Authenticatable
             'admin'   => route('admin.dashboard'),
             'cashier' => route('cashier.pos'),
             'kitchen' => route('kitchen.index'),
+            'waiter'  => route('waiter.index'),
         };
     }
 
     public function transactions()
-{
-    return $this->hasMany(Transaction::class, 'cashier_id');
-}
+    {
+        return $this->hasMany(Transaction::class, 'cashier_id');
+    }
 }

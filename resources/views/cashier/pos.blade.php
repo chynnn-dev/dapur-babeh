@@ -3,6 +3,26 @@
 @section('title', 'POS')
 
 @section('content')
+<style>
+    .mid-wait { margin-top: .6rem; padding: .8rem .9rem; border-radius: .6rem; background: #fff4e5; border: 1px solid #f7c98b; color: #7a4300; font-size: .85rem; }
+    .mid-wait strong { display: block; font-size: .95rem; }
+    .mid-wait span { display: block; opacity: .75; word-break: break-all; margin-bottom: .5rem; }
+    .mid-actions { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .mid-actions button { flex: 1; padding: .45rem .6rem; border-radius: .4rem; border: 1px solid #d9b27a; background: #fff; color: #7a4300; font-weight: 700; cursor: pointer; }
+    .mid-actions button.danger { border-color: #f3c1c1; color: #b91c1c; }
+
+    /* Pilihan metode: dua tombol besar sama lebar */
+    .methods { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: .5rem; }
+    .methods .method { padding: .75rem .5rem; font-weight: 800; border-radius: .6rem; }
+    .mid-info { display: grid; gap: .35rem; margin-top: .2rem; padding: .8rem .9rem; border-radius: .6rem; background: #e9f3ee; color: #0b4a37; font-size: .85rem; }
+    .mid-info b { font-size: .9rem; }
+
+    .pos-head-row { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+    .rh-link { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .8rem; border-radius: 99px; background: #e9f3ee; color: #0b4a37; font-size: .8rem; font-weight: 800; text-decoration: none; white-space: nowrap; }
+    .rh-link:hover { background: #d3e8de; }
+    .rh-badge { padding: .05rem .5rem; border-radius: 99px; background: #f58220; color: #fff; font-size: .7rem; }
+</style>
+
 <div class="pos">
 
     {{-- Kiri: daftar menu --}}
@@ -16,7 +36,15 @@
 
     {{-- Kanan: meja, keranjang & pembayaran --}}
     <aside class="pos-cart">
-        <h2>Pesanan</h2>
+        <div class="pos-head-row">
+            <h2>Pesanan</h2>
+            <a href="{{ route('cashier.history') }}" class="rh-link">
+                Riwayat
+                @if ($pendingCount)
+                    <span class="rh-badge" title="Pembayaran Non-Tunai yang menunggu">{{ $pendingCount }} menunggu</span>
+                @endif
+            </a>
+        </div>
 
         @if ($useTables)
             <div class="field">
@@ -84,6 +112,27 @@
                 </div>
             </div>
 
+            {{-- Midtrans (QRIS, e-wallet, kartu, dll) --}}
+            @if (isset($methods['midtrans']))
+                <div id="midtrans-box" class="pay-section" hidden>
+                    <div class="mid-info">
+                        <b>Pembayaran Non-Tunai</b>
+                        <span>Tekan tombol di bawah, lalu pelanggan memilih cara bayar: QRIS, e-wallet, transfer bank, atau kartu.</span>
+                        <span>Pesanan masuk ke dapur otomatis setelah pembayaran berhasil.</span>
+                    </div>
+
+                    <div id="mid-wait" class="mid-wait" hidden>
+                        <strong>Menunggu pembayaran...</strong>
+                        <span id="mid-order-id"></span>
+                        <div class="mid-actions">
+                            <button type="button" id="mid-reopen">Buka Pembayaran</button>
+                            <button type="button" id="mid-check">Cek Status</button>
+                            <button type="button" id="mid-cancel" class="danger">Batalkan</button>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <div id="error-box" class="error-box" hidden></div>
 
             <button id="pay-btn" type="button" class="pay-btn" disabled>Bayar</button>
@@ -101,6 +150,10 @@
     const payUrl      = @json(route('cashier.store'));
     const tablesUrl   = @json(route('cashier.tables'));
     const reserveBase = @json(url('/cashier/tables'));
+    const midCreate   = @json(route('cashier.midtrans.create'));
+    const midBase     = @json(url('/cashier/midtrans/payments'));
+    const snapUrl     = @json($snapUrl);
+    const midKey      = @json($midtransKey);
     const csrf        = document.querySelector('meta[name="csrf-token"]').content;
 
     const STATUS_LABEL = { available: 'Kosong', occupied: 'Terisi', reserved: 'Reservasi' };
@@ -113,6 +166,8 @@
     let activeCat     = 'all';
     let keyword       = '';
     let paying        = false;
+    let midOrder      = null; // { id, token } pembayaran Midtrans yang sedang berjalan
+    let midTimer      = null;
 
     const $         = (id) => document.getElementById(id);
     const rupiah    = (n) => 'Rp ' + Number(n).toLocaleString('id-ID');
@@ -178,7 +233,7 @@
         el.innerHTML = tables.map((t) => {
             const cls = (!reserveMode && selectedTable === t.id) ? 'selected' : t.status;
             return `<button type="button" class="tbl ${cls}" data-table="${t.id}"
-                        ${t.status === 'occupied' ? 'disabled' : ''}
+                       
                         title="Meja ${esc(t.number)} - ${STATUS_LABEL[t.status]}">${esc(t.number)}</button>`;
         }).join('');
 
@@ -201,14 +256,16 @@
     // Tampilkan bagian pembayaran sesuai metode yang dipilih
     function applyMethod() {
         $('cash-box').hidden    = method !== 'cash';
-        $('noncash-box').hidden = method === 'cash';
+        $('noncash-box').hidden = method === 'cash' || method === 'midtrans';
         if ($('qris-box')) $('qris-box').hidden = method !== 'qris';
         $('debit-hint').hidden  = method !== 'debit';
+        if ($('midtrans-box')) $('midtrans-box').hidden = method !== 'midtrans';
 
         document.querySelectorAll('.method').forEach((b) =>
             b.classList.toggle('active', b.dataset.method === method));
 
-        $('pay-btn').textContent = method === 'cash' ? 'Bayar' : 'Konfirmasi Pembayaran';
+        $('pay-btn').textContent = method === 'cash' ? 'Bayar'
+            : (method === 'midtrans' ? 'Bayar Non-Tunai' : 'Konfirmasi Pembayaran');
         updateTotals();
     }
 
@@ -238,9 +295,9 @@
             tables = data.tables;
 
             const chosen = selectedTable ? tableById(selectedTable) : null;
-            if (selectedTable && (!chosen || chosen.status === 'occupied')) {
+                       if (selectedTable && !chosen) {
                 selectedTable = null;
-                showError('Meja yang dipilih sudah terisi. Pilih meja lain.');
+                showError('Meja yang dipilih sudah tidak tersedia. Pilih meja lain.');
             }
 
             renderTables();
@@ -265,6 +322,8 @@
 
     // Tambah menu ke keranjang
     $('menu-grid').addEventListener('click', (e) => {
+        if (midOrder) return;   // pembayaran Midtrans sedang berjalan
+
         const btn = e.target.closest('[data-id]');
         if (!btn) return;
 
@@ -279,6 +338,8 @@
 
     // Ubah jumlah / hapus
     $('cart-list').addEventListener('click', (e) => {
+        if (midOrder) return;
+
         const btn = e.target.closest('[data-act]');
         if (!btn) return;
 
@@ -300,14 +361,19 @@
 
     // Peta meja: pilih meja, atau atur reservasi bila mode reservasi aktif
     $('table-map')?.addEventListener('click', async (e) => {
+        if (midOrder) return;
+
         const btn = e.target.closest('[data-table]');
         if (!btn) return;
 
         const t = tableById(Number(btn.dataset.table));
-        if (!t || t.status === 'occupied') return;
-
+        if (!t) return;
         // Mode reservasi: tandai atau batalkan reservasi
         if (reserveMode) {
+                        if (t.status === 'occupied') {
+                showError('Meja sedang terisi, status reservasi tidak bisa diubah.');
+                return;
+            }
             try {
                 const res = await fetch(`${reserveBase}/${t.id}/reservation`, {
                     method: 'PATCH',
@@ -332,6 +398,11 @@
             return;
         }
 
+        if (t.status === 'occupied' && selectedTable !== t.id &&
+            !confirm(`Meja ${t.number} sedang terisi. Tambahkan pesanan baru ke meja ini?`)) {
+            return;
+        }
+
         selectedTable = (selectedTable === t.id) ? null : t.id;
         renderTables();
     });
@@ -349,6 +420,8 @@
 
     // Pilih metode pembayaran
     $('methods')?.addEventListener('click', (e) => {
+        if (midOrder) return;   // jangan ganti metode saat menunggu pembayaran Midtrans
+
         const btn = e.target.closest('[data-method]');
         if (!btn) return;
         method = btn.dataset.method;
@@ -365,12 +438,166 @@
         });
     });
 
+    /* ---------------- Midtrans ---------------- */
+
+    const cartItems = () => [...cart.values()].map((l) => ({
+        menu_id: l.menu.id,
+        quantity: l.qty,
+        notes: l.notes.trim() || null,
+    }));
+
+    function loadSnap() {
+        return new Promise((resolve, reject) => {
+            if (window.snap) return resolve();
+
+            const s = document.createElement('script');
+            s.src = snapUrl;
+            s.dataset.clientKey = midKey;
+            s.onload = resolve;
+            s.onerror = () => reject(new Error('snap'));
+            document.head.appendChild(s);
+        });
+    }
+
+    function stopWatch() {
+        clearInterval(midTimer);
+        midTimer = null;
+    }
+
+    function startWatch() {
+        if (!midTimer) midTimer = setInterval(checkMidStatus, 3000);
+    }
+
+    function resetMid() {
+        stopWatch();
+        midOrder = null;
+        paying = false;
+        if ($('mid-wait')) $('mid-wait').hidden = true;
+        try { window.snap && window.snap.hide(); } catch (err) { /* abaikan */ }
+        updateTotals();
+    }
+
+    function openSnap() {
+        if (!midOrder || !window.snap) return;
+
+        window.snap.pay(midOrder.token, {
+            onSuccess: () => checkMidStatus(),
+            onPending: () => checkMidStatus(),
+            onError:   () => showError('Pembayaran gagal. Coba lagi atau pilih metode lain.'),
+            onClose:   () => { /* panel "Menunggu pembayaran" tetap tampil */ },
+        });
+    }
+
+    // Tanyakan ke server (yang menanyakan ke Midtrans) apakah sudah lunas
+    async function checkMidStatus() {
+        if (!midOrder) return;
+
+        try {
+            const res = await fetch(`${midBase}/${midOrder.id}/status`, { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) return;
+
+            const data = await res.json();
+
+            if (data.status === 'paid' && data.redirect) {
+                stopWatch();
+                window.location.href = data.redirect;
+                return;
+            }
+
+            if (['failed', 'expired', 'cancelled'].includes(data.status)) {
+                const label = { failed: 'ditolak', expired: 'kedaluwarsa', cancelled: 'dibatalkan' }[data.status];
+                resetMid();
+                showError('Pembayaran ' + label + '. Silakan coba lagi.');
+            }
+        } catch (err) {
+            // dicoba lagi pada putaran berikutnya
+        }
+    }
+
+    async function payWithMidtrans() {
+        paying = true;
+        updateTotals();
+
+        try {
+            const res = await fetch(midCreate, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                },
+                body: JSON.stringify({
+                    table_id: useTables ? selectedTable : null,
+                    items: cartItems(),
+                }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                const messages = data.errors ? Object.values(data.errors).flat() : [data.message || 'Terjadi kesalahan.'];
+                showError(messages.join('\n'));
+                refreshTables();
+                paying = false;
+                updateTotals();
+                return;
+            }
+
+            midOrder = { id: data.order_id, token: data.token };
+            $('mid-order-id').textContent = data.order_id;
+            $('mid-wait').hidden = false;
+
+            await loadSnap();
+            startWatch();
+            openSnap();
+        } catch (err) {
+            showError('Gagal membuka pembayaran Midtrans. Periksa koneksi lalu coba lagi.');
+
+            if (!midOrder) {
+                paying = false;
+                updateTotals();
+            }
+        }
+    }
+
+    $('mid-reopen')?.addEventListener('click', openSnap);
+    $('mid-check')?.addEventListener('click', checkMidStatus);
+
+    $('mid-cancel')?.addEventListener('click', async () => {
+        if (!midOrder || !confirm('Batalkan pembayaran ini?')) return;
+
+        try {
+            const res = await fetch(`${midBase}/${midOrder.id}/cancel`, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+            });
+            const data = await res.json();
+
+            // Ternyata sudah dibayar: lanjut ke struk
+            if (data.status === 'paid' && data.redirect) {
+                stopWatch();
+                window.location.href = data.redirect;
+                return;
+            }
+        } catch (err) {
+            showError('Gagal membatalkan. Coba lagi.');
+            return;
+        }
+
+        resetMid();
+    });
+
     // Bayar / konfirmasi pembayaran
     $('pay-btn').addEventListener('click', async () => {
         $('error-box').hidden = true;
 
         if (useTables && !selectedTable) {
             showError('Pilih nomor meja terlebih dahulu.');
+            return;
+        }
+
+        if (method === 'midtrans') {
+            payWithMidtrans();
             return;
         }
 
@@ -390,11 +617,7 @@
                     payment_method: method,
                     cash_received: method === 'cash' ? parseInt($('cash').value || '0', 10) : total(),
                     payment_reference: method === 'cash' ? null : ($('reference').value.trim() || null),
-                    items: [...cart.values()].map((l) => ({
-                        menu_id: l.menu.id,
-                        quantity: l.qty,
-                        notes: l.notes.trim() || null,
-                    })),
+                    items: cartItems(),
                 }),
             });
 

@@ -128,9 +128,9 @@
                             ${i.notes ? `<div class="kb-note">Catatan: ${esc(i.notes)}</div>` : ''}
                         </li>`).join('')}
                 </ul>
-                <button type="button" class="kb-act ${isNew ? 'start' : 'finish'}"
-                        data-id="${o.id}" data-status="${isNew ? 'cooking' : 'done'}">
-                    ${isNew ? 'MULAI MASAK' : 'SELESAI'}
+                                <button type="button" class="kb-act ${isNew ? 'start' : 'finish'}"
+                        data-id="${o.id}" data-status="${isNew ? 'cooking' : 'ready'}">
+                    ${isNew ? 'MULAI MASAK' : 'SIAP DIANTAR'}
                 </button>
             </article>`;
     }

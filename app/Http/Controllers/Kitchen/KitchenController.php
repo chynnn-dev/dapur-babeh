@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Kitchen;
 
 use App\Http\Controllers\Controller;
-use App\Models\RestaurantTable;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -43,11 +42,11 @@ class KitchenController extends Controller
     public function updateStatus(Request $request, Transaction $transaction): JsonResponse
     {
         $request->validate([
-            'status' => ['required', 'in:cooking,done'],
+            'status' => ['required', 'in:cooking,ready'],
         ]);
 
-        // Alur satu arah: paid -> cooking -> done
-        $allowed = ['paid' => 'cooking', 'cooking' => 'done'];
+        // Alur satu arah di dapur: paid -> cooking -> ready (siap diantar pelayan)
+        $allowed = ['paid' => 'cooking', 'cooking' => 'ready'];
 
         DB::transaction(function () use ($request, $transaction, $allowed) {
             $order = Transaction::lockForUpdate()->findOrFail($transaction->id);
@@ -59,10 +58,6 @@ class KitchenController extends Controller
             }
 
             $order->update(['status' => $request->status]);
-
-            if ($request->status === 'done' && $order->table_id) {
-                RestaurantTable::where('id', $order->table_id)->update(['status' => 'available']);
-            }
         });
 
         return response()->json(['ok' => true]);

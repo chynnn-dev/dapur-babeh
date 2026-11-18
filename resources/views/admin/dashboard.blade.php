@@ -4,8 +4,7 @@
 
 @section('content')
     @php
-        $statusLabels = ['paid' => 'Antre', 'cooking' => 'Dimasak', 'done' => 'Selesai', 'cancelled' => 'Batal'];
-        $methodLabels = ['cash' => 'Tunai', 'qris' => 'QRIS', 'debit' => 'Debit'];
+        $statusLabels = ['paid' => 'Antre', 'cooking' => 'Dimasak', 'ready' => 'Siap Diantar', 'served' => 'Sudah Diantar', 'done' => 'Selesai', 'cancelled' => 'Batal'];        $methodLabels = ['cash' => 'Tunai', 'qris' => 'QRIS', 'debit' => 'Debit'];
         $rp = fn ($n) => 'Rp ' . number_format($n, 0, ',', '.');
 
         $maxDaily = max(1, (int) collect($daily)->max('revenue'));

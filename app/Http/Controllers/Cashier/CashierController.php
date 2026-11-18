@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Cashier;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Menu;
+use App\Models\MidtransPayment;
 use App\Models\RestaurantTable;
 use App\Models\Setting;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -39,7 +42,32 @@ class CashierController extends Controller
         $methods   = $this->availableMethods();
         $qrisImage = Setting::qrisUrl();
 
-        return view('cashier.pos', compact('useTables', 'categories', 'menus', 'tables', 'methods', 'qrisImage'));
+        // Jika Midtrans aktif, layar kasir hanya menampilkan "Tunai" dan "Non-Tunai"
+        // (QRIS, e-wallet, transfer bank, dan kartu semuanya lewat Midtrans).
+        // Untuk menampilkan kembali QRIS/Debit manual, set 'replace_manual' => false di config/midtrans.php.
+        // store() tetap memakai availableMethods(), jadi "midtrans" tidak bisa dipakai untuk
+        // menandai transaksi lunas tanpa pembayaran.
+        if ($this->midtransEnabled()) {
+            if (config('midtrans.replace_manual', true)) {
+                $methods = ['cash' => 'Tunai'];
+            }
+
+            $methods['midtrans'] = 'Non-Tunai';
+        }
+
+        // Jumlah pembayaran Non-Tunai hari ini yang masih menunggu (ditampilkan sebagai lencana "Riwayat")
+        $pendingCount = $this->midtransEnabled()
+            ? MidtransPayment::where('status', 'pending')->whereDate('created_at', today())->count()
+            : 0;
+
+        $snapUrl = config('midtrans.is_production')
+            ? 'https://app.midtrans.com/snap/snap.js'
+            : 'https://app.sandbox.midtrans.com/snap/snap.js';
+        $midtransKey = config('midtrans.client_key');
+
+        return view('cashier.pos', compact(
+            'useTables', 'categories', 'menus', 'tables', 'methods', 'qrisImage', 'snapUrl', 'midtransKey', 'pendingCount'
+        ));
     }
 
     public function store(Request $request): JsonResponse
@@ -75,9 +103,9 @@ class CashierController extends Controller
                 $table = RestaurantTable::lockForUpdate()->findOrFail($tableId);
 
                 // Meja reservasi boleh dipakai (tamu reservasi datang); hanya meja terisi yang ditolak
-                if ($table->status === 'occupied') {
-                    throw ValidationException::withMessages(['table_id' => 'Meja sedang terisi, pilih meja lain.']);
-                }
+                // if ($table->status === 'occupied') {
+                //     throw ValidationException::withMessages(['table_id' => 'Meja sedang terisi, pilih meja lain.']);
+                // }
             }
 
             // Harga selalu diambil dari database, bukan dari input klien
@@ -144,6 +172,76 @@ class CashierController extends Controller
         return view('cashier.receipt', compact('transaction'));
     }
 
+    // Riwayat pembayaran: transaksi berhasil + percobaan Non-Tunai yang gagal/dibatalkan/menunggu
+    public function history(Request $request)
+    {
+        $request->validate([
+            'date'   => ['nullable', 'date'],
+            'filter' => ['nullable', Rule::in(['all', 'success', 'failed', 'pending'])],
+        ]);
+
+        $date   = Carbon::parse($request->input('date', today()->toDateString()))->toDateString();
+        $filter = $request->input('filter', 'all');
+
+        // Pembayaran yang menggantung lebih dari 1 hari sudah pasti kedaluwarsa di Midtrans
+        MidtransPayment::where('status', 'pending')
+            ->where('created_at', '<', now()->subDay())
+            ->update(['status' => 'expired']);
+
+        $methodLabels = ['cash' => 'Tunai', 'qris' => 'QRIS', 'debit' => 'Debit'];
+
+        $transactions = Transaction::with(['cashier', 'table'])
+            ->whereDate('created_at', $date)
+            ->get()
+            ->map(fn ($t) => [
+                'ts'       => $t->created_at->timestamp,
+                'time'     => $t->created_at,
+                'number'   => $t->invoice_number,
+                'method'   => $t->payment_detail ?: ($methodLabels[$t->payment_method] ?? $t->payment_method),
+                'total'    => $t->total_amount,
+                'cashier'  => $t->cashier?->name,
+                'table'    => $t->table?->table_number ?? 'Takeaway',
+                'group'    => $t->status === 'cancelled' ? 'failed' : 'success',
+                'label'    => $t->status === 'cancelled' ? 'Dibatalkan' : 'Berhasil',
+                'receipt'  => route('cashier.receipt', $t),
+                'order_id' => null,
+            ]);
+
+        $labels = ['pending' => 'Menunggu', 'failed' => 'Gagal', 'expired' => 'Kedaluwarsa', 'cancelled' => 'Dibatalkan'];
+
+        // Pembayaran yang sudah lunas tidak ditampilkan lagi di sini karena sudah menjadi transaksi di atas
+        $payments = MidtransPayment::with(['cashier', 'table'])
+            ->where('status', '!=', 'paid')
+            ->whereDate('created_at', $date)
+            ->get()
+            ->map(fn ($p) => [
+                'ts'       => $p->created_at->timestamp,
+                'time'     => $p->created_at,
+                'number'   => $p->order_id,
+                'method'   => $p->payment_type ? Str::title(str_replace('_', ' ', $p->payment_type)) : 'Non-Tunai',
+                'total'    => $p->total_amount,
+                'cashier'  => $p->cashier?->name,
+                'table'    => $p->table?->table_number ?? 'Takeaway',
+                'group'    => $p->status === 'pending' ? 'pending' : 'failed',
+                'label'    => $labels[$p->status] ?? $p->status,
+                'receipt'  => null,
+                'order_id' => $p->status === 'pending' ? $p->order_id : null,
+            ]);
+
+        $all = $transactions->concat($payments)->sortByDesc('ts')->values();
+
+        $summary = [
+            'success_count' => $all->where('group', 'success')->count(),
+            'success_total' => $all->where('group', 'success')->sum('total'),
+            'failed'        => $all->where('group', 'failed')->count(),
+            'pending'       => $all->where('group', 'pending')->count(),
+        ];
+
+        $rows = $filter === 'all' ? $all : $all->where('group', $filter)->values();
+
+        return view('cashier.history', compact('rows', 'summary', 'date', 'filter'));
+    }
+
     // Dipanggil POS tiap beberapa detik agar peta meja selalu terbaru
     public function tables(): JsonResponse
     {
@@ -195,6 +293,12 @@ class CashierController extends Controller
         }
 
         return $methods;
+    }
+
+    // Midtrans aktif jika server key dan client key sudah diisi di .env
+    private function midtransEnabled(): bool
+    {
+        return filled(config('midtrans.server_key')) && filled(config('midtrans.client_key'));
     }
 
     private function tableList(): array

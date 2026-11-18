@@ -105,7 +105,7 @@
                 <button class="tb-btn">Tambah</button>
             </div>
             @error('table_number') <p class="tb-error">{{ $message }}</p> @enderror
-            <p class="tb-hint">Status meja diatur oleh kasir (reservasi) dan sistem (terisi/kosong saat transaksi dan pesanan selesai).</p>
+            <p class="tb-hint">Status meja diatur oleh kasir (reservasi dan pesanan) dan pelayan (mengosongkan meja).</p>
         </form>
 
         {{-- Daftar meja --}}

@@ -225,6 +225,12 @@
         .info-row span { white-space: pre-line; }
         .btn-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.3rem; }
 
+        /* ===== Reservasi ===== */
+        .rsv-card { max-width: 38rem; margin: 0 auto; background: #fff; color: var(--ink); border-radius: 1.2rem; box-shadow: 0 20px 50px rgba(0,0,0,.3); border-top: 5px solid var(--orange); }
+        .rsv-main { padding: 2rem 2.2rem 1.7rem; }
+        .rsv-main h3 { margin: 0 0 1.2rem; font-size: 1rem; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; color: var(--green); }
+        @media (max-width: 600px) { .rsv-main { padding: 1.6rem 1.3rem 1.4rem; } }
+
         /* ===== Lokasi ===== */
         .loc-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 1.6rem; align-items: stretch; }
         .map-wrap { overflow: hidden; border-radius: 1rem; box-shadow: 0 10px 30px rgba(15,95,70,.18); background: #ddd; min-height: 24rem; }
@@ -476,25 +482,24 @@
                     <button type="button" id="all-menu-btn" class="btn-more">Lihat semua menu ({{ $menuItems->count() }})</button>
                 </div>
             @endif
-                @else
+        @else
             <p class="empty">Menu akan segera hadir.</p>
         @endif
     </div>
 </section>
 
-{{-- Kontak & Reservasi --}}
+{{-- Reservasi --}}
 <section id="kontak" class="section">
     <div class="container">
         <div class="sec-head reveal">
             <span class="eyebrow">Pesan Meja</span>
-            <h2 style="color:#fff">Kontak <b>&amp; Reservasi</b></h2>
+            <h2 style="color:#fff">Reservasi <b>Meja</b></h2>
             <div class="rule"></div>
         </div>
 
-        <div class="two-col">
-            {{-- Form reservasi --}}
-            <div class="card reveal">
-                <h3>Reservasi Meja</h3>
+        <div class="rsv-card reveal">
+            <div class="rsv-main">
+                <h3>Isi Data Reservasi</h3>
 
                 @if ($waNumber)
                     <form id="rsv-form" class="rsv-form">
@@ -518,40 +523,10 @@
                             Kirim Reservasi via WhatsApp
                         </button>
                     </form>
-                    <p class="note">Anda akan diarahkan ke WhatsApp. Reservasi dikonfirmasi setelah kami membalas pesan Anda.</p>
+                    <p class="note">Reservasi dikonfirmasi setelah kami membalas pesan Anda.</p>
                 @else
                     <p class="empty">Reservasi via WhatsApp akan segera tersedia.</p>
                 @endif
-            </div>
-
-            {{-- Info kontak --}}
-            <div class="card reveal">
-                <h3>Informasi</h3>
-
-                @if ($c['address'])
-                    <div class="info-row">
-                        <div class="info-ico">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
-                        </div>
-                        <div><b>Alamat</b><span>{{ $c['address'] }}</span></div>
-                    </div>
-                @endif
-
-                @if ($c['open_hours'])
-                    <div class="info-row">
-                        <div class="info-ico">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-                        </div>
-                        <div><b>Jam Buka</b><span>{{ $c['open_hours'] }}</span></div>
-                    </div>
-                @endif
-
-                <div class="btn-row">
-                    @if ($waUrl)
-                        <a href="{{ $waUrl }}" target="_blank" rel="noopener" class="btn-wa">Chat WhatsApp</a>
-                    @endif
-                    <a href="#lokasi" class="btn-maps">Lihat Peta</a>
-                </div>
             </div>
         </div>
     </div>
